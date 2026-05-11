@@ -18,4 +18,12 @@ export class DespesasService {
   findAll() {
     return this.despesaRepository.find();
   }
+  
+  remove(id: number) {
+  return this.despesaRepository.delete(id);
+  }
+
+    update(id: number, dados: any) {
+    return this.despesaRepository.update(id, dados);
+  }
 }
