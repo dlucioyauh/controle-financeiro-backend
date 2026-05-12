@@ -6,10 +6,12 @@ import {
   Delete,
   Param,
   Put,
+  UseGuards,
 } from '@nestjs/common';
-
+import { AuthGuard } from '../auth/auth.guard';
 import { DespesasService } from './despesas.service';
 
+@UseGuards(AuthGuard)
 @Controller('despesas')
 export class DespesasController {
   constructor(private readonly despesasService: DespesasService) {}

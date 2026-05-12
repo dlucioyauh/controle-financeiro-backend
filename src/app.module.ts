@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { DespesasModule } from './despesas/despesas.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { DespesasModule } from './despesas/despesas.module';
       synchronize: true,
     }),
     DespesasModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
 })
