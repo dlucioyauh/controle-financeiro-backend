@@ -11,8 +11,8 @@ export class UsersService {
   private readonly users: User[] = [
     {
       id: 1,
-      username: 'admin',
-      password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // senha: password
+      username: 'dlucio',
+      password: '$2b$10$M576byN2guBOyULY8frFTONOhgq4Quo7QtScuIq8pQJnUafJn1ONu',
     },
   ];
 
