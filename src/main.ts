@@ -5,10 +5,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'https://controle-financeiro-frontend-two.vercel.app',
-    ],
+    origin: true, // permite qualquer origem
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   });
