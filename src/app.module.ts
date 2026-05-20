@@ -1,15 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { DespesasModule } from './despesas/despesas.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { IngredientesModule } from './ingredientes/ingredientes.module';
 import { ReceitasModule } from './receitas/receitas.module';
+import { VendasModule } from './vendas/vendas.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -20,11 +25,13 @@ import { ReceitasModule } from './receitas/receitas.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+
     DespesasModule,
     AuthModule,
     UsersModule,
     IngredientesModule,
     ReceitasModule,
+    VendasModule,
   ],
 })
 export class AppModule {}
