@@ -1,57 +1,28 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity()
-export class Venda {
-  @PrimaryGeneratedColumn()
-  id: number;
+@Entity('vendas')
+export class VendaEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @CreateDateColumn()
-  criadoEm: Date;
+  @Column()
+  produto: string; // Ex: "Ovo de Páscoa Trufado", "Brownie Tradicional", "Brigadeiro"
 
-  @Column({ type: 'date' })
-  data: string;
-
-  @Column({ nullable: true })
-  nomeCliente: string;
-
-  @Column({ nullable: true })
-  enderecoCliente: string;
-
-  @Column({ nullable: true })
-  bairroCliente: string;
-
-  @Column({ nullable: true })
-  cidadeCliente: string;
-
-  @Column({
-    type: 'enum',
-    enum: ['cliente_final', 'parceiro', 'ifood', 'outro'],
-    default: 'cliente_final',
-  })
-  canal: string;
-
-  @Column({ nullable: true })
-  observacao: string; // ex: "Natal", "Dia das Mães", "Feriado"
-
-  @Column({
-    type: 'enum',
-    enum: ['pendente', 'pago', 'cancelado'],
-    default: 'pago',
-  })
-  status: string;
-
-  @Column('jsonb')
-  itens: {
-    produtoId?: number;
-    nomeProduto: string;
-    quantidade: number;
-    precoUnitario: number;
-    subtotal: number;
-  }[];
+  @Column('int')
+  quantidade: number;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  total: number;
+  precoUnitario: number;
 
-  @Column({ nullable: true })
-  formaPagamento: string;
+  @Column('decimal', { precision: 10, scale: 2 })
+  valorTotal: number;
+
+  @Column({ default: 'Balcão' })
+  canalVenda: string; // Balcão, iFood, Encomenda, WhatsApp, Café
+
+  @Column({ default: 'Regular' })
+  contextoData: string; // Regular, Páscoa, Natal, Dia das Mães, Feriado
+
+  @CreateDateColumn()
+  dataVenda: Date;
 }
