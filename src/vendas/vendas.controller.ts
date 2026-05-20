@@ -1,52 +1,24 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { VendasService } from './vendas.service';
+import { VendaEntity } from './venda.entity';
 import { AuthGuard } from '../auth/auth.guard';
 
-@UseGuards(AuthGuard)
 @Controller('vendas')
+@UseGuards(AuthGuard) // Garante segurança via JWT
 export class VendasController {
-  constructor(private readonly service: VendasService) {}
-
-  @Get()
-  findAll() {
-    return this.service.findAll();
-  }
-
-  @Get('estatisticas')
-  estatisticas(
-    @Query('dataInicio') dataInicio: string,
-    @Query('dataFim') dataFim: string,
-  ) {
-    return this.service.estatisticas(dataInicio, dataFim);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(Number(id));
-  }
+  constructor(private readonly vendasService: VendasService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  async criarVenda(@Body() dadosVenda: Partial<VendaEntity>): Promise<VendaEntity> {
+    // Garante o cálculo do valor total caso venha zerado por segurança
+    if (dadosVenda.quantidade && dadosVenda.precoUnitario) {
+      dadosVenda.valorTotal = dadosVenda.quantidade * dadosVenda.precoUnitario;
+    }
+    return this.vendasService.criar(dadosVenda);
   }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(Number(id), body);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(Number(id));
+  @Get()
+  async listarTodasVendas(): Promise<VendaEntity[]> {
+    return this.vendasService.listarTodas();
   }
 }
