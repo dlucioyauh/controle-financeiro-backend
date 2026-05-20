@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
-import { VendaEntity } from './venda.entity';
+import { Repository } from 'typeorm';
+import { VendaEntity } from './venda.entity.js';
 
 @Injectable()
 export class VendasService {
@@ -16,7 +16,8 @@ export class VendasService {
   }
 
   async listarTodas(): Promise<VendaEntity[]> {
-    return this.repo.find({ order: { id: 'DESC' } });
+    // Ordena pela data da venda mais recente para o histórico fazer sentido
+    return this.repo.find({ order: { dataVenda: 'DESC' } });
   }
 
   async findOne(id: string) {
@@ -33,10 +34,7 @@ export class VendasService {
   }
 
   async estatisticas(dataInicio: string, dataFim: string) {
-    // Buscamos todas as vendas para processamento analítico
     const todasVendas = await this.repo.find();
-    
-    // Convertemos para any para evitar que o compilador trave em propriedades não salvas/fantasmas
     const vendas = todasVendas as any[];
 
     const totalReceita = vendas.reduce((acc, v) => acc + Number(v.valorTotal || v.total || 0), 0);
