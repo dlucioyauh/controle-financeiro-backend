@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
-import { VendasService } from './vendas.service';
-import { VendaEntity } from './venda.entity';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Garanta que o caminho do seu Guard está correto
+import { VendasService } from './vendas.service.js';
+import { VendaEntity } from './venda.entity.js';
+// Ajustado para o nome real do arquivo: auth.guard.js
+import { AuthGuard } from '../auth/auth.guard.js'; 
 
 @Controller('vendas')
-@UseGuards(JwtAuthGuard) // Protege todas as rotas de vendas com o JWT
+@UseGuards(AuthGuard) // Atualizado para usar o AuthGuard correto
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
@@ -18,7 +19,7 @@ export class VendasController {
     return this.vendasService.listarTodas();
   }
 
-  // NOVA ROTA: Captura as queries (?dataInicio=...&dataFim=...) enviadas pelo frontend
+  // ROTA DO ANALYTICS
   @Get('estatisticas')
   obterEstatisticas(
     @Query('dataInicio') dataInicio: string,
