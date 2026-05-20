@@ -1,11 +1,10 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Query, Param, UseGuards } from '@nestjs/common';
 import { VendasService } from './vendas.service.js';
 import { VendaEntity } from './venda.entity.js';
-// Ajustado para o nome real do arquivo: auth.guard.js
-import { AuthGuard } from '../auth/auth.guard.js'; 
+import { AuthGuard } from '../auth/auth.guard.js';
 
 @Controller('vendas')
-@UseGuards(AuthGuard) // Atualizado para usar o AuthGuard correto
+@UseGuards(AuthGuard)
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
@@ -19,7 +18,11 @@ export class VendasController {
     return this.vendasService.listarTodas();
   }
 
-  // ROTA DO ANALYTICS
+  @Delete(':id')
+  remover(@Param('id') id: string) {
+    return this.vendasService.remove(id);
+  }
+
   @Get('estatisticas')
   obterEstatisticas(
     @Query('dataInicio') dataInicio: string,
