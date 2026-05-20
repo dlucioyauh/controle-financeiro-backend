@@ -1,24 +1,29 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { VendasService } from './vendas.service';
 import { VendaEntity } from './venda.entity';
-import { AuthGuard } from '../auth/auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Garanta que o caminho do seu Guard está correto
 
 @Controller('vendas')
-@UseGuards(AuthGuard) // Garante segurança via JWT
+@UseGuards(JwtAuthGuard) // Protege todas as rotas de vendas com o JWT
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
   @Post()
-  async criarVenda(@Body() dadosVenda: Partial<VendaEntity>): Promise<VendaEntity> {
-    // Garante o cálculo do valor total caso venha zerado por segurança
-    if (dadosVenda.quantidade && dadosVenda.precoUnitario) {
-      dadosVenda.valorTotal = dadosVenda.quantidade * dadosVenda.precoUnitario;
-    }
+  criar(@Body() dadosVenda: Partial<VendaEntity>) {
     return this.vendasService.criar(dadosVenda);
   }
 
   @Get()
-  async listarTodasVendas(): Promise<VendaEntity[]> {
+  listarTodas() {
     return this.vendasService.listarTodas();
+  }
+
+  // NOVA ROTA: Captura as queries (?dataInicio=...&dataFim=...) enviadas pelo frontend
+  @Get('estatisticas')
+  obterEstatisticas(
+    @Query('dataInicio') dataInicio: string,
+    @Query('dataFim') dataFim: string,
+  ) {
+    return this.vendasService.estatisticas(dataInicio, dataFim);
   }
 }
