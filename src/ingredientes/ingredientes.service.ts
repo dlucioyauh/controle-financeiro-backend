@@ -1,28 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Ingrediente } from './ingrediente.entity';
+import { IngredienteEntity } from './ingrediente.entity.js';
 
 @Injectable()
 export class IngredientesService {
   constructor(
-    @InjectRepository(Ingrediente)
-    private repo: Repository<Ingrediente>,
+    @InjectRepository(IngredienteEntity)
+    private repo: Repository<IngredienteEntity>,
   ) {}
 
-  findAll() {
-    return this.repo.find();
+  async criar(dadosIngrediente: Partial<IngredienteEntity>, username: string): Promise<IngredienteEntity> {
+    // Salva vinculando diretamente ao usuário ativo
+    const novoIngrediente = this.repo.create({ ...dadosIngrediente, usuario: username });
+    return this.repo.save(novoIngrediente);
   }
 
-  create(data: Partial<Ingrediente>) {
-    return this.repo.save(data);
+  async listarTodos(username: string): Promise<IngredienteEntity[]> {
+    // Retorna exclusivamente os insumos do usuário logado
+    return this.repo.find({
+      where: { usuario: username },
+      order: { nome: 'ASC' },
+    });
   }
 
-  update(id: number, data: Partial<Ingrediente>) {
-    return this.repo.update(id, data).then(() => this.repo.findOneBy({ id }));
-  }
+  async remover(id: string, username: string) {
+    const ingrediente = await this.repo.findOneBy({ id });
 
-  remove(id: number) {
+    if (ingrediente && ingrediente.usuario !== username) {
+      throw new UnauthorizedException('Você não tem permissão para remover este ingrediente.');
+    }
+
     return this.repo.delete(id);
   }
 }

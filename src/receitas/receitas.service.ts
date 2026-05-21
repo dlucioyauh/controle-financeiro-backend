@@ -1,32 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Receita } from './receita.entity';
+import { ReceitaEntity } from './receita.entity.js';
 
 @Injectable()
 export class ReceitasService {
   constructor(
-    @InjectRepository(Receita)
-    private repo: Repository<Receita>,
+    @InjectRepository(ReceitaEntity)
+    private repo: Repository<ReceitaEntity>,
   ) {}
 
-  findAll() {
-    return this.repo.find();
+  async criar(dadosReceita: Partial<ReceitaEntity>, username: string): Promise<ReceitaEntity> {
+    // Vincula a receita ao usuário logado
+    const novaReceita = this.repo.create({ ...dadosReceita, usuario: username });
+    return this.repo.save(novaReceita);
   }
 
-  findOne(id: number) {
-    return this.repo.findOneBy({ id });
+  async listarTodas(username: string): Promise<ReceitaEntity[]> {
+    // Busca apenas as receitas criadas pelo usuário logado
+    return this.repo.find({
+      where: { usuario: username },
+      order: { createdAt: 'DESC' },
+    });
   }
 
-  create(data: Partial<Receita>) {
-    return this.repo.save(data);
-  }
-
-  update(id: number, data: Partial<Receita>) {
-    return this.repo.update(id, data).then(() => this.repo.findOneBy({ id }));
-  }
-
-  remove(id: number) {
+  async remover(id: string, username: string) {
+    const receita = await this.repo.findOneBy({ id });
+    
+    if (receita && receita.usuario !== username) {
+      throw new UnauthorizedException('Você não tem permissão para remover esta receita.');
+    }
+    
     return this.repo.delete(id);
   }
 }

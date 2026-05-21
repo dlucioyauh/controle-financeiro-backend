@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Receita } from './receita.entity';
-import { ReceitasService } from './receitas.service';
-import { ReceitasController } from './receitas.controller';
+import { ReceitasService } from './receitas.service.js';
+import { ReceitasController } from './receitas.controller.js';
+import { ReceitaEntity } from './receita.entity.js'; // Mudou aqui
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Receita])],
-  providers: [ReceitasService],
+  imports: [TypeOrmModule.forFeature([ReceitaEntity])], // Mudou aqui
   controllers: [ReceitasController],
+  providers: [ReceitasService],
 })
 export class ReceitasModule {}
