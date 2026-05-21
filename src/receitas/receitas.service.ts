@@ -13,7 +13,6 @@ export class ReceitasService {
 
   findAll() {
     return this.repo.find({
-      relations: ['ingredientes', 'ingredientes.ingrediente'],
       order: {
         createdAt: 'DESC',
       },
@@ -23,21 +22,34 @@ export class ReceitasService {
   findOne(id: string) {
     return this.repo.findOne({
       where: { id },
-      relations: ['ingredientes', 'ingredientes.ingrediente'],
     });
   }
 
-  create(data: Partial<ReceitaEntity>) {
-    return this.repo.save(data);
+  async create(data: Partial<ReceitaEntity>) {
+    const receita = this.repo.create(data);
+
+    return this.repo.save(receita);
   }
 
   async update(id: string, data: Partial<ReceitaEntity>) {
-    await this.repo.update(id, data);
+    const receitaExistente = await this.findOne(id);
 
-    return this.findOne(id);
+    if (!receitaExistente) {
+      throw new Error('Receita não encontrada');
+    }
+
+    Object.assign(receitaExistente, data);
+
+    return this.repo.save(receitaExistente);
   }
 
-  remove(id: string) {
-    return this.repo.delete(id);
+  async remove(id: string) {
+    const receita = await this.findOne(id);
+
+    if (!receita) {
+      throw new Error('Receita não encontrada');
+    }
+
+    return this.repo.remove(receita);
   }
 }

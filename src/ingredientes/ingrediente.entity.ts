@@ -8,20 +8,25 @@ export class IngredienteEntity {
   @Column()
   nome: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
   precoCompra: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
   quantidadeCompra: number;
 
-  @Column()
-  unidadeMedida: string; // ex: g, kg, ml, un
+  @Column({ nullable: true })
+  unidadeMedida: string;
+
+  // Campos compatíveis com o frontend
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  preco: number;
+
+  @Column({ nullable: true })
+  unidade: string;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  // 🔒 IDENTIFICADOR MULTIUSUÁRIO:
-  // Vincula o ingrediente ao usuário que o cadastrou
   @Column({ nullable: true })
   usuario: string;
 }

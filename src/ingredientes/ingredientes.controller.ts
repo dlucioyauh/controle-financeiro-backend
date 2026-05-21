@@ -6,10 +6,12 @@ import {
   Delete,
   Body,
   Param,
+  UseGuards,
 } from '@nestjs/common';
-
 import { IngredientesService } from './ingredientes.service';
+import { AuthGuard } from '../auth/auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('ingredientes')
 export class IngredientesController {
   constructor(
@@ -23,7 +25,15 @@ export class IngredientesController {
 
   @Post()
   create(@Body() body: any) {
-    return this.service.create(body);
+    // Mapeia campos do frontend para o banco
+    const payload = {
+      ...body,
+      preco: body.preco ?? body.precoCompra,
+      unidade: body.unidade ?? body.unidadeMedida,
+      precoCompra: body.precoCompra ?? body.preco,
+      unidadeMedida: body.unidadeMedida ?? body.unidade,
+    };
+    return this.service.create(payload);
   }
 
   @Put(':id')
@@ -31,7 +41,14 @@ export class IngredientesController {
     @Param('id') id: string,
     @Body() body: any,
   ) {
-    return this.service.update(id, body);
+    const payload = {
+      ...body,
+      preco: body.preco ?? body.precoCompra,
+      unidade: body.unidade ?? body.unidadeMedida,
+      precoCompra: body.precoCompra ?? body.preco,
+      unidadeMedida: body.unidadeMedida ?? body.unidade,
+    };
+    return this.service.update(id, payload);
   }
 
   @Delete(':id')

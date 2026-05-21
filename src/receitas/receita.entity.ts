@@ -1,30 +1,55 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('receitas')
 export class ReceitaEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  nome: string;
+  nome!: string;
 
   @Column({ nullable: true })
-  descricao: string;
+  descricao!: string;
 
   @Column('int')
-  rendimento: number;
+  rendimento!: number;
+
+  @Column({ nullable: true })
+  unidadeRendimento!: string;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
-  maoDeObra: number;
+  maoDeObra!: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  lucroDesejado: number;
+  @Column('decimal', { precision: 10, scale: 2, default: 10 })
+  custosFixosPorcentagem!: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  custoIngredientes!: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  precoVendaFinal!: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  precoVendaParceiro!: number;
+
+  @Column('jsonb', { nullable: true })
+  ingredientes!: {
+    ingredienteId: string;
+    nome: string;
+    quantidade: number;
+    unidade: string;
+    custoUnitario: number;
+    custoTotal: number;
+  }[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
-  // 🔒 IDENTIFICADOR MULTIUSUÁRIO:
-  // Salva qual username é o dono desta receita
   @Column({ nullable: true })
-  usuario: string;
+  usuario!: string;
 }
