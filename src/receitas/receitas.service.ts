@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ReceitaEntity } from './receita.entity.js';
+
+import { ReceitaEntity } from './receita.entity';
 
 @Injectable()
 export class ReceitasService {
@@ -10,27 +11,33 @@ export class ReceitasService {
     private repo: Repository<ReceitaEntity>,
   ) {}
 
-  async criar(dadosReceita: Partial<ReceitaEntity>, username: string): Promise<ReceitaEntity> {
-    // Vincula a receita ao usuário logado
-    const novaReceita = this.repo.create({ ...dadosReceita, usuario: username });
-    return this.repo.save(novaReceita);
-  }
-
-  async listarTodas(username: string): Promise<ReceitaEntity[]> {
-    // Busca apenas as receitas criadas pelo usuário logado
+  findAll() {
     return this.repo.find({
-      where: { usuario: username },
-      order: { createdAt: 'DESC' },
+      relations: ['ingredientes', 'ingredientes.ingrediente'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 
-  async remover(id: string, username: string) {
-    const receita = await this.repo.findOneBy({ id });
-    
-    if (receita && receita.usuario !== username) {
-      throw new UnauthorizedException('Você não tem permissão para remover esta receita.');
-    }
-    
+  findOne(id: string) {
+    return this.repo.findOne({
+      where: { id },
+      relations: ['ingredientes', 'ingredientes.ingrediente'],
+    });
+  }
+
+  create(data: Partial<ReceitaEntity>) {
+    return this.repo.save(data);
+  }
+
+  async update(id: string, data: Partial<ReceitaEntity>) {
+    await this.repo.update(id, data);
+
+    return this.findOne(id);
+  }
+
+  remove(id: string) {
     return this.repo.delete(id);
   }
 }

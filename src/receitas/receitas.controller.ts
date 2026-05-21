@@ -1,27 +1,46 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
-import { ReceitasService } from './receitas.service.js';
-import { AuthGuard } from '../auth/auth.guard.js';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+} from '@nestjs/common';
+
+import { ReceitasService } from './receitas.service';
 
 @Controller('receitas')
-@UseGuards(AuthGuard)
 export class ReceitasController {
-  constructor(private readonly receitasService: ReceitasService) {}
-
-  @Post()
-  criar(@Body() dadosReceita: any, @Req() req: any) {
-    const username = req.user.username;
-    return this.receitasService.criar(dadosReceita, username);
-  }
+  constructor(
+    private readonly service: ReceitasService,
+  ) {}
 
   @Get()
-  listarTodas(@Req() req: any) {
-    const username = req.user.username;
-    return this.receitasService.listarTodas(username);
+  findAll() {
+    return this.service.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
+  }
+
+  @Post()
+  create(@Body() body: any) {
+    return this.service.create(body);
+  }
+
+  @Put(':id')
+  update(
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
+    return this.service.update(id, body);
   }
 
   @Delete(':id')
-  remover(@Param('id') id: string, @Req() req: any) {
-    const username = req.user.username;
-    return this.receitasService.remover(id, username);
+  remove(@Param('id') id: string) {
+    return this.service.remove(id);
   }
 }
