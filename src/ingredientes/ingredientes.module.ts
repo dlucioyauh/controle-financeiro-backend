@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Ingrediente } from './ingrediente.entity';
-import { IngredientesService } from './ingredientes.service';
-import { IngredientesController } from './ingredientes.controller';
+import { IngredientesService } from './ingredientes.service.js';
+import { IngredientesController } from './ingredientes.controller.js';
+import { IngredienteEntity } from './ingrediente.entity.js'; // Mudou aqui
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Ingrediente])],
-  providers: [IngredientesService],
+  imports: [TypeOrmModule.forFeature([IngredienteEntity])], // Mudou aqui
   controllers: [IngredientesController],
-  exports: [IngredientesService],
+  providers: [IngredientesService],
+  exports: [IngredientesService], // Garante a exportação se receitas usar ele
 })
 export class IngredientesModule {}

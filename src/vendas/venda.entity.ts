@@ -6,7 +6,7 @@ export class VendaEntity {
   id: string;
 
   @Column()
-  produto: string; // Ex: "Ovo de Páscoa Trufado", "Brownie Tradicional", "Brigadeiro"
+  produto: string;
 
   @Column('int')
   quantidade: number;
@@ -18,11 +18,17 @@ export class VendaEntity {
   valorTotal: number;
 
   @Column({ default: 'Balcão' })
-  canalVenda: string; // Balcão, iFood, Encomenda, WhatsApp, Café
+  canalVenda: string;
 
-  @Column({ default: 'Regular' })
-  contextoData: string; // Regular, Páscoa, Natal, Dia das Mães, Feriado
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  dataVenda: Date;
 
   @CreateDateColumn()
-  dataVenda: Date;
+  createdAt: Date;
+
+  // 🔒 IDENTIFICADOR MULTIUSUÁRIO:
+  // Como não temos a tabela 'UserEntity', usamos uma coluna de texto simples.
+  // Ela vai guardar o username de quem criou a venda (ex: 'dlucio').
+  @Column({ nullable: true })
+  usuario: string;
 }

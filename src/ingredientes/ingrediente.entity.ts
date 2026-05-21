@@ -1,16 +1,27 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity()
-export class Ingrediente {
-  @PrimaryGeneratedColumn()
-  id: number;
+@Entity('ingredientes')
+export class IngredienteEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   nome: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  preco: number;
+  precoCompra: number;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  quantidadeCompra: number;
 
   @Column()
-  unidade: string; // kg, litro, un, g, ml
+  unidadeMedida: string; // ex: g, kg, ml, un
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  // 🔒 IDENTIFICADOR MULTIUSUÁRIO:
+  // Vincula o ingrediente ao usuário que o cadastrou
+  @Column({ nullable: true })
+  usuario: string;
 }

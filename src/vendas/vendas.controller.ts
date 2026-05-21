@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Delete, Body, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Query, Param, UseGuards, Req } from '@nestjs/common';
 import { VendasService } from './vendas.service.js';
-import { VendaEntity } from './venda.entity.js';
 import { AuthGuard } from '../auth/auth.guard.js';
 
 @Controller('vendas')
@@ -9,25 +8,30 @@ export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
   @Post()
-  criar(@Body() dadosVenda: Partial<VendaEntity>) {
-    return this.vendasService.criar(dadosVenda);
+  criar(@Body() dadosVenda: any, @Req() req: any) {
+    const username = req.user.username; 
+    return this.vendasService.criar(dadosVenda, username);
   }
 
   @Get()
-  listarTodas() {
-    return this.vendasService.listarTodas();
+  listarTodas(@Req() req: any) {
+    const username = req.user.username; // 🔒 Captura o usuário logado
+    return this.vendasService.listarTodas(username); // 🔑 Passa o username aqui
   }
 
   @Delete(':id')
-  remover(@Param('id') id: string) {
-    return this.vendasService.remove(id);
+  async remover(@Param('id') id: string, @Req() req: any) {
+    const username = req.user.username; // 🔒 Captura o usuário logado
+    return this.vendasService.remove(id, username); // 🔑 Passa o username aqui
   }
 
   @Get('estatisticas')
   obterEstatisticas(
     @Query('dataInicio') dataInicio: string,
     @Query('dataFim') dataFim: string,
+    @Req() req: any
   ) {
-    return this.vendasService.estatisticas(dataInicio, dataFim);
+    const username = req.user.username; // 🔒 Captura o usuário logado
+    return this.vendasService.estatisticas(dataInicio, dataFim, username); // 🔑 Passa o username aqui
   }
 }
