@@ -23,7 +23,8 @@ import { VendasModule } from './vendas/vendas.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: false,
+     synchronize: false,
+      migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
 
     DespesasModule,
