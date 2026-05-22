@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { IngredientesService } from './ingredientes.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -14,18 +15,15 @@ import { AuthGuard } from '../auth/auth.guard';
 @UseGuards(AuthGuard)
 @Controller('ingredientes')
 export class IngredientesController {
-  constructor(
-    private readonly service: IngredientesService,
-  ) {}
+  constructor(private readonly service: IngredientesService) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Req() req: any) {
+    return this.service.findAll(req.user.username);
   }
 
   @Post()
-  create(@Body() body: any) {
-    // Mapeia campos do frontend para o banco
+  create(@Body() body: any, @Req() req: any) {
     const payload = {
       ...body,
       preco: body.preco ?? body.precoCompra,
@@ -33,14 +31,11 @@ export class IngredientesController {
       precoCompra: body.precoCompra ?? body.preco,
       unidadeMedida: body.unidadeMedida ?? body.unidade,
     };
-    return this.service.create(payload);
+    return this.service.create(payload, req.user.username);
   }
 
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() body: any,
-  ) {
+  update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     const payload = {
       ...body,
       preco: body.preco ?? body.precoCompra,
@@ -48,11 +43,11 @@ export class IngredientesController {
       precoCompra: body.precoCompra ?? body.preco,
       unidadeMedida: body.unidadeMedida ?? body.unidade,
     };
-    return this.service.update(id, payload);
+    return this.service.update(id, payload, req.user.username);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.service.remove(id, req.user.username);
   }
 }

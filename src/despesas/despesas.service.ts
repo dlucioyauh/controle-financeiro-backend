@@ -10,20 +10,20 @@ export class DespesasService {
     private despesaRepository: Repository<Despesa>,
   ) {}
 
-  create(data: Partial<Despesa>) {
-    const despesa = this.despesaRepository.create(data);
+  create(data: Partial<Despesa>, usuario: string) {
+    const despesa = this.despesaRepository.create({ ...data, usuario });
     return this.despesaRepository.save(despesa);
   }
 
-  findAll() {
-    return this.despesaRepository.find();
-  }
-  
-  remove(id: number) {
-  return this.despesaRepository.delete(id);
+  findAll(usuario: string) {
+    return this.despesaRepository.find({ where: { usuario } });
   }
 
-    update(id: number, dados: any) {
-    return this.despesaRepository.update(id, dados);
+  remove(id: number, usuario: string) {
+    return this.despesaRepository.delete({ id, usuario });
+  }
+
+  update(id: number, dados: Partial<Despesa>, usuario: string) {
+    return this.despesaRepository.update({ id, usuario }, dados);
   }
 }
