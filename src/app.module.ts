@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { DespesasModule } from './despesas/despesas.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -11,10 +12,7 @@ import { VendasModule } from './vendas/vendas.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -23,16 +21,28 @@ import { VendasModule } from './vendas/vendas.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-     synchronize: false,
+      synchronize: false,
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
-
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 60000,   // 1 minuto
+        limit: 10,    // máx 10 requisições por minuto por IP
+      },
+    ]),
     DespesasModule,
     AuthModule,
     UsersModule,
     IngredientesModule,
     ReceitasModule,
     VendasModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}
