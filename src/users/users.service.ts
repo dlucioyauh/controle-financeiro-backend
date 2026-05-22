@@ -1,22 +1,26 @@
-import { Injectable } from '@nestjs/common';
-
-export type User = {
-  id: number;
-  username: string;
-  password: string;
-};
+import { Injectable, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UserEntity } from './user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  private readonly users: User[] = [
-    {
-      id: 1,
-      username: 'dlucio',
-      password: '$2b$10$M576byN2guBOyULY8frFTONOhgq4Quo7QtScuIq8pQJnUafJn1ONu',
-    },
-  ];
+  constructor(
+    @InjectRepository(UserEntity)
+    private usersRepository: Repository<UserEntity>,
+  ) {}
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.users.find((user) => user.username === username);
+  async findOne(username: string): Promise<UserEntity | null> {
+    return this.usersRepository.findOne({ where: { username } });
+  }
+
+  async create(username: string, password: string): Promise<UserEntity> {
+    const exists = await this.findOne(username);
+    if (exists) throw new ConflictException('Usuário já existe');
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = this.usersRepository.create({ username, password: hashed });
+    return this.usersRepository.save(user);
   }
 }

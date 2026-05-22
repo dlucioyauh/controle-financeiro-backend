@@ -9,7 +9,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
     JwtModule.register({
       global: true,
-      secret: 'minha_chave_secreta_123',
+      secret: process.env.JWT_SECRET ?? 'fallback_apenas_local',
       signOptions: { expiresIn: '8h' },
     }),
   ],
