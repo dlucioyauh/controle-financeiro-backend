@@ -9,43 +9,18 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  async login(
-    @Body() body: { username: string; password: string },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const { access_token } = await this.authService.signIn(body.username, body.password);
-    res.cookie('auth_token', access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 8 * 60 * 60 * 1000,
-    });
-    return { message: 'Login realizado com sucesso' };
+  async login(@Body() body: { username: string; password: string }) {
+    return this.authService.signIn(body.username, body.password);
   }
 
   @Post('register')
-  async register(
-    @Body() body: { username: string; password: string },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const { access_token } = await this.authService.register(body.username, body.password);
-    res.cookie('auth_token', access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 8 * 60 * 60 * 1000,
-    });
-    return { message: 'Cadastro realizado com sucesso' };
+  async register(@Body() body: { username: string; password: string }) {
+    return this.authService.register(body.username, body.password);
   }
 
   @Post('logout')
   @HttpCode(200)
-  logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('auth_token', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+  logout() {
     return { message: 'Logout realizado com sucesso' };
   }
 
