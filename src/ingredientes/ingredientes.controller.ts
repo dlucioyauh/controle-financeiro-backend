@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -35,6 +36,7 @@ export class IngredientesController {
   }
 
   @Put(':id')
+  @Patch(':id')
   update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     const payload = {
       ...body,

@@ -1,6 +1,7 @@
-import { Body, Controller, Post, Res, HttpCode } from '@nestjs/common';
+import { Body, Controller, Post, Get, Res, Req, HttpCode, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -17,7 +18,7 @@ export class AuthController {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: 8 * 60 * 60 * 1000, // 8h
+      maxAge: 8 * 60 * 60 * 1000,
     });
     return { message: 'Login realizado com sucesso' };
   }
@@ -46,5 +47,11 @@ export class AuthController {
       sameSite: 'none',
     });
     return { message: 'Logout realizado com sucesso' };
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  me(@Req() req: any) {
+    return { username: req.user.username };
   }
 }
