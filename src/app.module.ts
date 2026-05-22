@@ -26,9 +26,8 @@ import { VendasModule } from './vendas/vendas.module';
     }),
     ThrottlerModule.forRoot([
       {
-        name: 'short',
-        ttl: 60000,   // 1 minuto
-        limit: 10,    // máx 10 requisições por minuto por IP
+        ttl: 60000,
+        limit: 5,
       },
     ]),
     DespesasModule,
