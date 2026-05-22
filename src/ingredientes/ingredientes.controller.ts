@@ -36,8 +36,19 @@ export class IngredientesController {
   }
 
   @Put(':id')
+  updatePut(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const payload = {
+      ...body,
+      preco: body.preco ?? body.precoCompra,
+      unidade: body.unidade ?? body.unidadeMedida,
+      precoCompra: body.precoCompra ?? body.preco,
+      unidadeMedida: body.unidadeMedida ?? body.unidade,
+    };
+    return this.service.update(id, payload, req.user.username);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+  updatePatch(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     const payload = {
       ...body,
       preco: body.preco ?? body.precoCompra,
