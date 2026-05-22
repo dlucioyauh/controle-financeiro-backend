@@ -27,9 +27,9 @@ import { VendasModule } from './vendas/vendas.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 5,
+        limit: 100, // era 5, agora 100
       },
-    ]),
+  ]),
     DespesasModule,
     AuthModule,
     UsersModule,
