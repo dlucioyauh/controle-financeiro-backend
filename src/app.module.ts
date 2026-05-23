@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { IngredientesModule } from './ingredientes/ingredientes.module';
 import { ReceitasModule } from './receitas/receitas.module';
 import { VendasModule } from './vendas/vendas.module';
+import { ClientesModule } from './clientes/clientes.module';
 
 @Module({
   imports: [
@@ -27,15 +28,16 @@ import { VendasModule } from './vendas/vendas.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100, // era 5, agora 100
+        limit: 100,
       },
-  ]),
+    ]),
     DespesasModule,
     AuthModule,
     UsersModule,
     IngredientesModule,
     ReceitasModule,
     VendasModule,
+    ClientesModule,
   ],
   providers: [
     {
