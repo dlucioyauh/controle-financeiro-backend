@@ -11,6 +11,9 @@ export class UserEntity {
   @Column()
   password: string;
 
+  @Column({ nullable: true })
+  nomeNegocio: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }
