@@ -26,9 +26,12 @@ export class VendaEntity {
   @CreateDateColumn()
   createdAt: Date;
 
-  // 🔒 IDENTIFICADOR MULTIUSUÁRIO:
-  // Como não temos a tabela 'UserEntity', usamos uma coluna de texto simples.
-  // Ela vai guardar o username de quem criou a venda (ex: 'dlucio').
   @Column({ nullable: true })
   usuario: string;
+
+  @Column({ nullable: true })
+  clienteId: string;
+
+  @Column({ nullable: true })
+  clienteNome: string;
 }
