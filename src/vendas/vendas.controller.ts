@@ -9,29 +9,34 @@ export class VendasController {
 
   @Post()
   criar(@Body() dadosVenda: any, @Req() req: any) {
-    const username = req.user.username; 
-    return this.vendasService.criar(dadosVenda, username);
+    return this.vendasService.criar(dadosVenda, req.user.username);
   }
 
   @Get()
   listarTodas(@Req() req: any) {
-    const username = req.user.username; // 🔒 Captura o usuário logado
-    return this.vendasService.listarTodas(username); // 🔑 Passa o username aqui
+    return this.vendasService.listarTodas(req.user.username);
   }
 
   @Delete(':id')
-  async remover(@Param('id') id: string, @Req() req: any) {
-    const username = req.user.username; // 🔒 Captura o usuário logado
-    return this.vendasService.remove(id, username); // 🔑 Passa o username aqui
+  remover(@Param('id') id: string, @Req() req: any) {
+    return this.vendasService.remove(id, req.user.username);
   }
 
   @Get('estatisticas')
   obterEstatisticas(
     @Query('dataInicio') dataInicio: string,
     @Query('dataFim') dataFim: string,
-    @Req() req: any
+    @Req() req: any,
   ) {
-    const username = req.user.username; // 🔒 Captura o usuário logado
-    return this.vendasService.estatisticas(dataInicio, dataFim, username); // 🔑 Passa o username aqui
+    return this.vendasService.estatisticas(dataInicio, dataFim, req.user.username);
+  }
+
+  @Get('estatisticas-clientes')
+  obterEstatisticasClientes(
+    @Query('dataInicio') dataInicio: string,
+    @Query('dataFim') dataFim: string,
+    @Req() req: any,
+  ) {
+    return this.vendasService.estatisticasClientes(dataInicio, dataFim, req.user.username);
   }
 }

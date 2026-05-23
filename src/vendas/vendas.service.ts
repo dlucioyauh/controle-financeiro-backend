@@ -18,7 +18,7 @@ export class VendasService {
   async listarTodas(username: string): Promise<VendaEntity[]> {
     return this.repo.find({
       where: { usuario: username },
-      order: { dataVenda: 'DESC' }
+      order: { dataVenda: 'DESC' },
     });
   }
 
@@ -86,5 +86,31 @@ export class VendasService {
     });
 
     return { totalReceita, totalVendas, ticketMedio, produtosMaisVendidos, canaisMap, vendasPorDia };
+  }
+
+  async estatisticasClientes(dataInicio: string, dataFim: string, username: string) {
+    const todasVendas = await this.repo.find({ where: { usuario: username } });
+    const vendas = todasVendas.filter((v) => {
+      if (!dataInicio || !dataFim) return true;
+      try {
+        const dataVenda = new Date(v.dataVenda).toISOString().split('T')[0];
+        return dataVenda >= dataInicio && dataVenda <= dataFim;
+      } catch {
+        return true;
+      }
+    });
+
+    const clientesMap: Record<string, { nome: string; pedidos: number; faturamento: number }> = {};
+    vendas.forEach((v) => {
+      const id = v.clienteId || '__sem_cliente__';
+      const nome = v.clienteNome || 'Sem cliente';
+      if (!clientesMap[id]) clientesMap[id] = { nome, pedidos: 0, faturamento: 0 };
+      clientesMap[id].pedidos += 1;
+      clientesMap[id].faturamento += Number(v.valorTotal || 0);
+    });
+
+    return Object.values(clientesMap)
+      .sort((a, b) => b.faturamento - a.faturamento)
+      .slice(0, 10);
   }
 }
