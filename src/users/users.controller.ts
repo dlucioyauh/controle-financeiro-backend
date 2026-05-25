@@ -1,31 +1,48 @@
-import { Controller, Get, Patch, Body, UseGuards, Req } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { AuthGuard } from '../auth/auth.guard';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  Req,
+  ForbiddenException,
+} from '@nestjs/common';
 
-@UseGuards(AuthGuard)
+import { UsersService } from './users.service';
+
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+  ) {}
 
-  @Get('perfil')
-  getPerfil(@Req() req: any) {
-    return this.usersService.getPerfil(req.user.username);
+  @Get()
+  async listar(@Req() req: any) {
+    if (
+      req.user?.username !== 'dlucio'
+    ) {
+      throw new ForbiddenException(
+        'Acesso negado',
+      );
+    }
+
+    return this.usersService.listarUsuarios();
   }
 
-  @Patch('perfil')
-  atualizarPerfil(@Body() body: { nomeNegocio?: string }, @Req() req: any) {
-    return this.usersService.atualizarPerfil(req.user.username, body);
-  }
-
-  @Patch('alterar-senha')
-  alterarSenha(
-    @Body() body: { senhaAtual: string; novaSenha: string },
+  @Delete(':id')
+  async deletar(
+    @Param('id') id: string,
     @Req() req: any,
   ) {
-    return this.usersService.alterarSenha(
-      req.user.username,
-      body.senhaAtual,
-      body.novaSenha,
+    if (
+      req.user?.username !== 'dlucio'
+    ) {
+      throw new ForbiddenException(
+        'Acesso negado',
+      );
+    }
+
+    return this.usersService.deletarUsuario(
+      id,
     );
   }
 }

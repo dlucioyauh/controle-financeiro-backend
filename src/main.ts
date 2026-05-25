@@ -1,17 +1,31 @@
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-  app.set('trust proxy', 1);
+  const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:5173'],
+    origin: 'http://localhost:5173',
     credentials: true,
   });
 
-  await app.listen(process.env.PORT ?? 3001);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  const configService = app.get(ConfigService);
+
+  const port = configService.get<number>('PORT') || 3001;
+
+  await app.listen(port);
+
+  console.log(`🚀 Backend rodando em http://localhost:${port}`);
 }
+
 bootstrap();

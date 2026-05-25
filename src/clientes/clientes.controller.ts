@@ -1,29 +1,38 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller, Get, Post, Patch, Delete, Param, Body, ParseUUIDPipe,
+} from '@nestjs/common';
 import { ClientesService } from './clientes.service';
-import { AuthGuard } from '../auth/auth.guard';
+import { Customer } from './customer.entity';
 
-@UseGuards(AuthGuard)
 @Controller('clientes')
 export class ClientesController {
-  constructor(private readonly service: ClientesService) {}
-
-  @Get()
-  findAll(@Req() req: any) {
-    return this.service.findAll(req.user.username);
-  }
+  constructor(private readonly clientesService: ClientesService) {}
 
   @Post()
-  create(@Body() body: any, @Req() req: any) {
-    return this.service.create(body, req.user.username);
+  criar(@Body() data: { nome: string; email?: string; telefone?: string; endereco?: string }): Promise<Customer> {
+    return this.clientesService.criar(data);
+  }
+
+  @Get()
+  listar(): Promise<Customer[]> {
+    return this.clientesService.listar();
+  }
+
+  @Get(':id')
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<Customer> {
+    return this.clientesService.buscarPorId(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-    return this.service.update(id, body, req.user.username);
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: Partial<{ nome: string; email: string; telefone: string; endereco: string }>,
+  ): Promise<Customer> {
+    return this.clientesService.atualizar(id, data);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.service.remove(id, req.user.username);
+  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.clientesService.remover(id);
   }
 }

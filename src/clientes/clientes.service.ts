@@ -1,29 +1,50 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClienteEntity } from './cliente.entity';
+import { Customer } from './customer.entity';
 
 @Injectable()
 export class ClientesService {
   constructor(
-    @InjectRepository(ClienteEntity)
-    private repo: Repository<ClienteEntity>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
   ) {}
 
-  findAll(usuario: string) {
-    return this.repo.find({ where: { usuario }, order: { nome: 'ASC' } });
+  async criar(data: {
+    nome: string;
+    email?: string;
+    telefone?: string;
+    endereco?: string;
+  }): Promise<Customer> {
+    const customer = this.customerRepository.create(data);
+    return this.customerRepository.save(customer);
   }
 
-  create(data: Partial<ClienteEntity>, usuario: string) {
-    return this.repo.save({ ...data, usuario });
+  async listar(): Promise<Customer[]> {
+    return this.customerRepository.find({ order: { nome: 'ASC' } });
   }
 
-  async update(id: string, data: Partial<ClienteEntity>, usuario: string) {
-    await this.repo.update({ id, usuario }, data);
-    return this.repo.findOneBy({ id });
+  async buscarPorId(id: string): Promise<Customer> {
+    const customer = await this.customerRepository.findOne({ where: { id } });
+    if (!customer) {
+      throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+    }
+    return customer;
   }
 
-  remove(id: string, usuario: string) {
-    return this.repo.delete({ id, usuario });
+  async atualizar(
+    id: string,
+    data: Partial<{ nome: string; email: string; telefone: string; endereco: string }>,
+  ): Promise<Customer> {
+    const customer = await this.buscarPorId(id);
+    Object.assign(customer, data);
+    return this.customerRepository.save(customer);
+  }
+
+  async remover(id: string): Promise<void> {
+    const resultado = await this.customerRepository.delete(id);
+    if (resultado.affected === 0) {
+      throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+    }
   }
 }

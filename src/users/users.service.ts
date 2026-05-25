@@ -1,7 +1,14 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+} from '@nestjs/common';
+
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { UserEntity } from './user.entity';
+
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -11,41 +18,75 @@ export class UsersService {
     private usersRepository: Repository<UserEntity>,
   ) {}
 
-  async findOne(username: string): Promise<UserEntity | null> {
-    return this.usersRepository.findOne({ where: { username } });
+  async create(data: {
+    username: string;
+    password: string;
+    nome?: string;
+    email?: string;
+    nomeNegocio?: string;
+    telefone?: string;
+  }) {
+    const usuarioExiste =
+      await this.usersRepository.findOne({
+        where: [
+          { username: data.username },
+          ...(data.email
+            ? [{ email: data.email }]
+            : []),
+        ],
+      });
+
+    if (usuarioExiste) {
+      throw new ConflictException(
+        'Usuário ou email já cadastrado',
+      );
+    }
+
+    const senhaHash = await bcrypt.hash(
+      data.password,
+      10,
+    );
+
+    const novoUsuario =
+      this.usersRepository.create({
+        username: data.username,
+        password: senhaHash,
+        nome: data.nome || null,
+        email: data.email || null,
+        nomeNegocio:
+          data.nomeNegocio || null,
+        telefone: data.telefone || null,
+      });
+
+    return this.usersRepository.save(
+      novoUsuario,
+    );
   }
 
-  async create(username: string, password: string): Promise<UserEntity> {
-    const exists = await this.findOne(username);
-    if (exists) throw new ConflictException('Usuário já existe');
-    const hashed = await bcrypt.hash(password, 10);
-    const user = this.usersRepository.create({ username, password: hashed });
-    return this.usersRepository.save(user);
+  async findOne(username: string) {
+    return this.usersRepository.findOne({
+      where: { username },
+    });
   }
 
-  async alterarSenha(username: string, senhaAtual: string, novaSenha: string): Promise<void> {
-    const user = await this.findOne(username);
-    if (!user) throw new UnauthorizedException('Usuário não encontrado');
-    const senhaCorreta = await bcrypt.compare(senhaAtual, user.password);
-    if (!senhaCorreta) throw new UnauthorizedException('Senha atual incorreta');
-    user.password = await bcrypt.hash(novaSenha, 10);
-    await this.usersRepository.save(user);
+  async findById(id: string) {
+    return this.usersRepository.findOne({
+      where: { id },
+    });
   }
 
-  async atualizarPerfil(username: string, data: { nomeNegocio?: string }): Promise<UserEntity> {
-    const user = await this.findOne(username);
-    if (!user) throw new UnauthorizedException('Usuário não encontrado');
-    if (data.nomeNegocio !== undefined) user.nomeNegocio = data.nomeNegocio;
-    return this.usersRepository.save(user);
+  async listarUsuarios() {
+    return this.usersRepository.find({
+      select: {
+        id: true,
+        username: true,
+        nome: true,
+        createdAt: true,
+      },
+    });
   }
 
-  async getPerfil(username: string): Promise<{ username: string; nomeNegocio: string | null; createdAt: Date }> {
-    const user = await this.findOne(username);
-    if (!user) throw new UnauthorizedException('Usuário não encontrado');
-    return {
-      username: user.username,
-      nomeNegocio: user.nomeNegocio,
-      createdAt: user.createdAt,
-    };
+  async deletarUsuario(id: string) {
+    return this.usersRepository.delete(id);
   }
 }
