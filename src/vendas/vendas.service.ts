@@ -44,6 +44,13 @@ export class VendasService {
     }
   }
 
+  async listarPorUsuario(usuario: string): Promise<VendaEntity[]> {
+  return this.vendaRepository.find({
+    where: { usuario },
+    order: { dataVenda: 'DESC' },
+  });
+  }
+
   // --- ESTATÍSTICAS ---
   async getEstatisticas(usuario: string, dataInicio: string, dataFim: string) {
     console.log('### getEstatisticas chamado ###');

@@ -20,14 +20,17 @@ import type { Request } from 'express';
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
   criar(@Body() data: Partial<VendaEntity>): Promise<VendaEntity> {
     return this.vendasService.criar(data);
   }
 
+  @UseGuards(AuthGuard)
   @Get()
-  listar(): Promise<VendaEntity[]> {
-    return this.vendasService.listar();
+  listar(@Req() req: Request): Promise<VendaEntity[]> {
+    const usuario = (req as any).user?.username;
+    return this.vendasService.listarPorUsuario(usuario);
   }
 
   // --- ESTATÍSTICAS (protegidas) ---
@@ -53,11 +56,13 @@ export class VendasController {
     return this.vendasService.getTopClientes(usuario, dataInicio, dataFim);
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
   buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<VendaEntity> {
     return this.vendasService.buscarPorId(id);
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
   atualizar(
     @Param('id', ParseUUIDPipe) id: string,
@@ -66,6 +71,7 @@ export class VendasController {
     return this.vendasService.atualizar(id, data);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.vendasService.remover(id);

@@ -23,6 +23,9 @@ export class DespesaEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   categoria!: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  usuario!: string | null;   // ← NOVA COLUNA
+
   @CreateDateColumn()
   createdAt!: Date;
 
