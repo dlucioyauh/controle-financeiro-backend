@@ -1,32 +1,36 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('ingredientes')
 export class IngredienteEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
-  @Column()
-  nome: string;
+  @Column({ type: 'varchar' })
+  nome!: string;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  precoCompra: number;
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  precoCompra!: number | null;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  quantidadeCompra: number;
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  quantidadeCompra!: number | null;
 
-  @Column({ nullable: true })
-  unidadeMedida: string;
+  @Column({ type: 'varchar', nullable: true })
+  unidadeMedida!: string | null;
 
-  // Campos compatíveis com o frontend
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  preco: number;
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  preco!: number | null;
 
-  @Column({ nullable: true })
-  unidade: string;
+  @Column({ type: 'varchar', nullable: true })
+  unidade!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  usuario!: string | null;
 
   @CreateDateColumn()
-  createdAt: Date;
-
-  @Column({ nullable: true })
-  usuario: string;
+  createdAt!: Date;
 }

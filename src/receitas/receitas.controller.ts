@@ -1,44 +1,38 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Req,
+  Controller, Get, Post, Patch, Delete, Param, Body, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ReceitasService } from './receitas.service';
-import { AuthGuard } from '../auth/auth.guard';
+import { ReceitaEntity } from './receita.entity';
 
-@UseGuards(AuthGuard)
 @Controller('receitas')
 export class ReceitasController {
-  constructor(private readonly service: ReceitasService) {}
+  constructor(private readonly receitasService: ReceitasService) {}
+
+  @Post()
+  criar(@Body() data: Partial<ReceitaEntity>): Promise<ReceitaEntity> {
+    return this.receitasService.criar(data);
+  }
 
   @Get()
-  findAll(@Req() req: any) {
-    return this.service.findAll(req.user.username);
+  listar(): Promise<ReceitaEntity[]> {
+    return this.receitasService.listar();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: any) {
-    return this.service.findOne(id, req.user.username);
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<ReceitaEntity> {
+    return this.receitasService.buscarPorId(id);
   }
 
-  @Post()
-  create(@Body() body: any, @Req() req: any) {
-    return this.service.create(body, req.user.username);
-  }
-
-  @Put(':id')
-  update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-    return this.service.update(id, body, req.user.username);
+  @Patch(':id')
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: Partial<ReceitaEntity>,
+  ): Promise<ReceitaEntity> {
+    return this.receitasService.atualizar(id, data);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.service.remove(id, req.user.username);
+  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.receitasService.remover(id);
   }
 }

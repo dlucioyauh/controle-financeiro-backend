@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReceitaEntity } from './receita.entity';
@@ -7,34 +7,39 @@ import { ReceitaEntity } from './receita.entity';
 export class ReceitasService {
   constructor(
     @InjectRepository(ReceitaEntity)
-    private repo: Repository<ReceitaEntity>,
+    private receitaRepository: Repository<ReceitaEntity>,
   ) {}
 
-  findAll(usuario: string) {
-    return this.repo.find({
-      where: { usuario },
-      order: { createdAt: 'DESC' },
-    });
+  async criar(data: Partial<ReceitaEntity>): Promise<ReceitaEntity> {
+    const receita = this.receitaRepository.create(data);
+    return this.receitaRepository.save(receita);
   }
 
-  findOne(id: string, usuario: string) {
-    return this.repo.findOne({ where: { id, usuario } });
+  async listar(): Promise<ReceitaEntity[]> {
+    return this.receitaRepository.find({ order: { nome: 'ASC' } });
   }
 
-  create(data: Partial<ReceitaEntity>, usuario: string) {
-    return this.repo.save({ ...data, usuario });
+  async buscarPorId(id: string): Promise<ReceitaEntity> {
+    const receita = await this.receitaRepository.findOne({ where: { id } });
+    if (!receita) {
+      throw new NotFoundException(`Receita com ID ${id} não encontrada`);
+    }
+    return receita;
   }
 
-  async update(id: string, data: Partial<ReceitaEntity>, usuario: string) {
-    const receita = await this.findOne(id, usuario);
-    if (!receita) throw new Error('Receita não encontrada');
+  async atualizar(
+    id: string,
+    data: Partial<ReceitaEntity>,
+  ): Promise<ReceitaEntity> {
+    const receita = await this.buscarPorId(id);
     Object.assign(receita, data);
-    return this.repo.save(receita);
+    return this.receitaRepository.save(receita);
   }
 
-  async remove(id: string, usuario: string) {
-    const receita = await this.findOne(id, usuario);
-    if (!receita) throw new Error('Receita não encontrada');
-    return this.repo.remove(receita);
+  async remover(id: string): Promise<void> {
+    const resultado = await this.receitaRepository.delete(id);
+    if (resultado.affected === 0) {
+      throw new NotFoundException(`Receita com ID ${id} não encontrada`);
+    }
   }
 }

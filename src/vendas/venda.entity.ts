@@ -1,37 +1,42 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('vendas')
 export class VendaEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
-  @Column()
-  produto: string;
+  @Column({ type: 'varchar' })
+  produto!: string;
 
-  @Column('int')
-  quantidade: number;
+  @Column({ type: 'int' })
+  quantidade!: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  precoUnitario: number;
+  @Column({ type: 'numeric', precision: 10, scale: 2 })
+  precoUnitario!: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  valorTotal: number;
+  @Column({ type: 'numeric', precision: 10, scale: 2 })
+  valorTotal!: number;
 
-  @Column({ default: 'Balcão' })
-  canalVenda: string;
+  @Column({ type: 'varchar', default: 'Balcão' })
+  canalVenda!: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  dataVenda: Date;
+  @Column({ type: 'timestamp' })
+  dataVenda!: Date;
+
+  @Column({ type: 'varchar', nullable: true })
+  usuario!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  clienteId!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  clienteNome!: string | null;
 
   @CreateDateColumn()
-  createdAt: Date;
-
-  @Column({ nullable: true })
-  usuario: string;
-
-  @Column({ nullable: true })
-  clienteId: string;
-
-  @Column({ nullable: true })
-  clienteNome: string;
+  createdAt!: Date;
 }

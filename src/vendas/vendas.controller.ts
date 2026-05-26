@@ -1,42 +1,68 @@
-import { Controller, Get, Post, Delete, Body, Query, Param, UseGuards, Req } from '@nestjs/common';
-import { VendasService } from './vendas.service.js';
-import { AuthGuard } from '../auth/auth.guard.js';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  Req,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import { VendasService } from './vendas.service';
+import { VendaEntity } from './venda.entity';
+import { Request } from 'express';
 
 @Controller('vendas')
-@UseGuards(AuthGuard)
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
   @Post()
-  criar(@Body() dadosVenda: any, @Req() req: any) {
-    return this.vendasService.criar(dadosVenda, req.user.username);
+  criar(@Body() data: Partial<VendaEntity>): Promise<VendaEntity> {
+    return this.vendasService.criar(data);
   }
 
   @Get()
-  listarTodas(@Req() req: any) {
-    return this.vendasService.listarTodas(req.user.username);
-  }
-
-  @Delete(':id')
-  remover(@Param('id') id: string, @Req() req: any) {
-    return this.vendasService.remove(id, req.user.username);
+  listar(): Promise<VendaEntity[]> {
+    return this.vendasService.listar();
   }
 
   @Get('estatisticas')
-  obterEstatisticas(
+  async getEstatisticas(
     @Query('dataInicio') dataInicio: string,
     @Query('dataFim') dataFim: string,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
-    return this.vendasService.estatisticas(dataInicio, dataFim, req.user.username);
+    const usuario = (req as any).user?.username; // extrai do token JWT
+    return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
   }
 
   @Get('estatisticas-clientes')
-  obterEstatisticasClientes(
+  async getEstatisticasClientes(
     @Query('dataInicio') dataInicio: string,
     @Query('dataFim') dataFim: string,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
-    return this.vendasService.estatisticasClientes(dataInicio, dataFim, req.user.username);
+    const usuario = (req as any).user?.username;
+    return this.vendasService.getTopClientes(usuario, dataInicio, dataFim);
+  }
+
+  @Get(':id')
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<VendaEntity> {
+    return this.vendasService.buscarPorId(id);
+  }
+
+  @Patch(':id')
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: Partial<VendaEntity>,
+  ): Promise<VendaEntity> {
+    return this.vendasService.atualizar(id, data);
+  }
+
+  @Delete(':id')
+  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.vendasService.remover(id);
   }
 }

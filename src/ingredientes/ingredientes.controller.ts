@@ -1,66 +1,38 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Req,
+  Controller, Get, Post, Patch, Delete, Param, Body, ParseUUIDPipe,
 } from '@nestjs/common';
 import { IngredientesService } from './ingredientes.service';
-import { AuthGuard } from '../auth/auth.guard';
+import { IngredienteEntity } from './ingrediente.entity';
 
-@UseGuards(AuthGuard)
 @Controller('ingredientes')
 export class IngredientesController {
-  constructor(private readonly service: IngredientesService) {}
-
-  @Get()
-  findAll(@Req() req: any) {
-    return this.service.findAll(req.user.username);
-  }
+  constructor(private readonly ingredientesService: IngredientesService) {}
 
   @Post()
-  create(@Body() body: any, @Req() req: any) {
-    const payload = {
-      ...body,
-      preco: body.preco ?? body.precoCompra,
-      unidade: body.unidade ?? body.unidadeMedida,
-      precoCompra: body.precoCompra ?? body.preco,
-      unidadeMedida: body.unidadeMedida ?? body.unidade,
-    };
-    return this.service.create(payload, req.user.username);
+  criar(@Body() data: Partial<IngredienteEntity>): Promise<IngredienteEntity> {
+    return this.ingredientesService.criar(data);
   }
 
-  @Put(':id')
-  updatePut(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-    const payload = {
-      ...body,
-      preco: body.preco ?? body.precoCompra,
-      unidade: body.unidade ?? body.unidadeMedida,
-      precoCompra: body.precoCompra ?? body.preco,
-      unidadeMedida: body.unidadeMedida ?? body.unidade,
-    };
-    return this.service.update(id, payload, req.user.username);
+  @Get()
+  listar(): Promise<IngredienteEntity[]> {
+    return this.ingredientesService.listar();
+  }
+
+  @Get(':id')
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<IngredienteEntity> {
+    return this.ingredientesService.buscarPorId(id);
   }
 
   @Patch(':id')
-  updatePatch(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-    const payload = {
-      ...body,
-      preco: body.preco ?? body.precoCompra,
-      unidade: body.unidade ?? body.unidadeMedida,
-      precoCompra: body.precoCompra ?? body.preco,
-      unidadeMedida: body.unidadeMedida ?? body.unidade,
-    };
-    return this.service.update(id, payload, req.user.username);
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: Partial<IngredienteEntity>,
+  ): Promise<IngredienteEntity> {
+    return this.ingredientesService.atualizar(id, data);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.service.remove(id, req.user.username);
+  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.ingredientesService.remover(id);
   }
 }

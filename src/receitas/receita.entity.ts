@@ -10,46 +10,39 @@ export class ReceitaEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   nome!: string;
 
-  @Column({ nullable: true })
-  descricao!: string;
+  @Column({ type: 'varchar', nullable: true })
+  descricao!: string | null;
 
-  @Column('int')
+  @Column({ type: 'int' })
   rendimento!: number;
 
-  @Column({ nullable: true })
-  unidadeRendimento!: string;
-
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
   maoDeObra!: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 10 })
+  @Column({ type: 'varchar', nullable: true })
+  unidadeRendimento!: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 10 })
   custosFixosPorcentagem!: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
   custoIngredientes!: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
   precoVendaFinal!: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
   precoVendaParceiro!: number;
 
-  @Column('jsonb', { nullable: true })
-  ingredientes!: {
-    ingredienteId: string;
-    nome: string;
-    quantidade: number;
-    unidade: string;
-    custoUnitario: number;
-    custoTotal: number;
-  }[];
+  @Column({ type: 'jsonb', nullable: true })
+  ingredientes!: any;
+
+  @Column({ type: 'varchar', nullable: true })
+  usuario!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
-
-  @Column({ nullable: true })
-  usuario!: string;
 }

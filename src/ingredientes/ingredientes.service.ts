@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IngredienteEntity } from './ingrediente.entity';
@@ -7,26 +7,39 @@ import { IngredienteEntity } from './ingrediente.entity';
 export class IngredientesService {
   constructor(
     @InjectRepository(IngredienteEntity)
-    private repo: Repository<IngredienteEntity>,
+    private ingredienteRepository: Repository<IngredienteEntity>,
   ) {}
 
-  findAll(usuario: string) {
-    return this.repo.find({
-      where: { usuario },
-      order: { nome: 'ASC' },
-    });
+  async criar(data: Partial<IngredienteEntity>): Promise<IngredienteEntity> {
+    const ingrediente = this.ingredienteRepository.create(data);
+    return this.ingredienteRepository.save(ingrediente);
   }
 
-  create(data: Partial<IngredienteEntity>, usuario: string) {
-    return this.repo.save({ ...data, usuario });
+  async listar(): Promise<IngredienteEntity[]> {
+    return this.ingredienteRepository.find({ order: { nome: 'ASC' } });
   }
 
-  async update(id: string, data: Partial<IngredienteEntity>, usuario: string) {
-    await this.repo.update({ id, usuario }, data);
-    return this.repo.findOneBy({ id, usuario });
+  async buscarPorId(id: string): Promise<IngredienteEntity> {
+    const ingrediente = await this.ingredienteRepository.findOne({ where: { id } });
+    if (!ingrediente) {
+      throw new NotFoundException(`Ingrediente com ID ${id} não encontrado`);
+    }
+    return ingrediente;
   }
 
-  remove(id: string, usuario: string) {
-    return this.repo.delete({ id, usuario });
+  async atualizar(
+    id: string,
+    data: Partial<IngredienteEntity>,
+  ): Promise<IngredienteEntity> {
+    const ingrediente = await this.buscarPorId(id);
+    Object.assign(ingrediente, data);
+    return this.ingredienteRepository.save(ingrediente);
+  }
+
+  async remover(id: string): Promise<void> {
+    const resultado = await this.ingredienteRepository.delete(id);
+    if (resultado.affected === 0) {
+      throw new NotFoundException(`Ingrediente com ID ${id} não encontrado`);
+    }
   }
 }
