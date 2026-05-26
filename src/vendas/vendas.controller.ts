@@ -22,8 +22,12 @@ export class VendasController {
 
   @UseGuards(AuthGuard)
   @Post()
-  criar(@Body() data: Partial<VendaEntity>): Promise<VendaEntity> {
-    return this.vendasService.criar(data);
+  criar(
+    @Body() data: Partial<VendaEntity>,
+    @Req() req: Request,
+  ): Promise<VendaEntity> {
+    const usuario = (req as any).user?.username;
+    return this.vendasService.criar({ ...data, usuario }); // ← INCLUI usuario
   }
 
   @UseGuards(AuthGuard)
@@ -33,7 +37,6 @@ export class VendasController {
     return this.vendasService.listarPorUsuario(usuario);
   }
 
-  // --- ESTATÍSTICAS (protegidas) ---
   @UseGuards(AuthGuard)
   @Get('estatisticas')
   async getEstatisticas(
