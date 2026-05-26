@@ -1,28 +1,31 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-@Entity('despesas')
-export class Despesa {
-  @PrimaryGeneratedColumn()
-  id: number;
+@Entity('despesa')
+export class DespesaEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-  @Column()
-  tipo: string;
+  @Column({ type: 'varchar', length: 200 })
+  descricao!: string;
 
-  @Column()
-  descricao: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  valor!: number;
 
-  @Column()
-  categoria: string;
+  @Column({ type: 'date' })
+  data!: string; // formato 'YYYY-MM-DD'
 
-  @Column('decimal')
-  valor: number;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  categoria!: string | null;
 
-  @Column()
-  formaPagamento: string;
+  @CreateDateColumn()
+  createdAt!: Date;
 
-  @Column()
-  data: Date;
-
-  @Column({ nullable: true })
-  usuario: string;
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

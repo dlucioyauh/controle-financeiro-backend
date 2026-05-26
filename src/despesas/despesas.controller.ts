@@ -2,38 +2,46 @@ import {
   Controller,
   Get,
   Post,
-  Body,
+  Patch,
   Delete,
   Param,
-  Put,
-  UseGuards,
-  Req,
+  Body,
+  ParseUUIDPipe,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
 import { DespesasService } from './despesas.service';
+import { DespesaEntity } from './despesa.entity';
 
-@UseGuards(AuthGuard)
 @Controller('despesas')
 export class DespesasController {
   constructor(private readonly despesasService: DespesasService) {}
 
   @Post()
-  create(@Body() body: any, @Req() req: any) {
-    return this.despesasService.create(body, req.user.username);
+  criar(
+    @Body() data: { descricao: string; valor: number; data: string; categoria?: string },
+  ): Promise<DespesaEntity> {
+    return this.despesasService.criar(data);
   }
 
   @Get()
-  findAll(@Req() req: any) {
-    return this.despesasService.findAll(req.user.username);
+  listar(): Promise<DespesaEntity[]> {
+    return this.despesasService.listar();
+  }
+
+  @Get(':id')
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<DespesaEntity> {
+    return this.despesasService.buscarPorId(id);
+  }
+
+  @Patch(':id')
+  atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: Partial<{ descricao: string; valor: number; data: string; categoria: string }>,
+  ): Promise<DespesaEntity> {
+    return this.despesasService.atualizar(id, data);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.despesasService.remove(Number(id), req.user.username);
-  }
-
-  @Put(':id')
-  update(@Param('id') id: string, @Body() dados: any, @Req() req: any) {
-    return this.despesasService.update(Number(id), dados, req.user.username);
+  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.despesasService.remover(id);
   }
 }
