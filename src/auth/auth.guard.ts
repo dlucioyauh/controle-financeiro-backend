@@ -25,7 +25,12 @@ export class AuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
-      request['user'] = payload;
+      // payload tem { sub: uuid, username: string }
+      // mapeia para o formato que o controller espera
+      request['user'] = {
+        userId: payload.sub,
+        username: payload.username,
+      };
     } catch {
       throw new UnauthorizedException('Token inválido');
     }
@@ -33,7 +38,6 @@ export class AuthGuard implements CanActivate {
   }
 
   private extractToken(request: Request): string | undefined {
-    // Tenta cookie primeiro, depois Authorization header (compatibilidade)
     if (request.cookies?.auth_token) {
       return request.cookies.auth_token;
     }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { VendaEntity } from './venda.entity';
 
 @Injectable()
@@ -45,20 +45,22 @@ export class VendasService {
   }
 
   // --- ESTATÍSTICAS ---
-  async getEstatisticas(
-    usuario: string,
-    dataInicio: string,
-    dataFim: string,
-  ) {
-    const qb = this.vendaRepository
+  async getEstatisticas(usuario: string, dataInicio: string, dataFim: string) {
+    console.log('### getEstatisticas chamado ###');
+    console.log('usuario:', usuario);
+    console.log('dataInicio:', dataInicio);
+    console.log('dataFim:', dataFim);
+
+    const vendas = await this.vendaRepository
       .createQueryBuilder('v')
       .where('v.usuario = :usuario', { usuario })
       .andWhere('v.dataVenda BETWEEN :inicio AND :fim', {
         inicio: dataInicio,
         fim: dataFim + ' 23:59:59',
-      });
+      })
+      .getMany();
 
-    const vendas = await qb.getMany();
+    console.log('vendas encontradas:', vendas.length);
 
     // Calcular totais
     const totalReceita = vendas.reduce((sum, v) => sum + Number(v.valorTotal), 0);

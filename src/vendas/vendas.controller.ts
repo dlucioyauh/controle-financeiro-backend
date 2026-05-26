@@ -8,11 +8,13 @@ import {
   Body,
   Query,
   Req,
+  UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { VendasService } from './vendas.service';
 import { VendaEntity } from './venda.entity';
-import { Request } from 'express';
+import { AuthGuard } from '../auth/auth.guard';
+import type { Request } from 'express';
 
 @Controller('vendas')
 export class VendasController {
@@ -28,16 +30,19 @@ export class VendasController {
     return this.vendasService.listar();
   }
 
+  // --- ESTATÍSTICAS (protegidas) ---
+  @UseGuards(AuthGuard)
   @Get('estatisticas')
   async getEstatisticas(
     @Query('dataInicio') dataInicio: string,
     @Query('dataFim') dataFim: string,
     @Req() req: Request,
   ) {
-    const usuario = (req as any).user?.username; // extrai do token JWT
+    const usuario = (req as any).user?.username;
     return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
   }
 
+  @UseGuards(AuthGuard)
   @Get('estatisticas-clientes')
   async getEstatisticasClientes(
     @Query('dataInicio') dataInicio: string,
