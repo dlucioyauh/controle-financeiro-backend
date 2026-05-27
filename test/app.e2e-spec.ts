@@ -1,29 +1,49 @@
+jest.setTimeout(30000);
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import request = require('supertest');
+import { TestAppModule } from './test.module';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('VendasController (e2e)', () => {
+  let app: INestApplication;
+  let token: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [TestAppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('deve registrar e logar', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ username: 'test_e2e', password: '123456' })
+      .expect(201);
+    expect(res.body.access_token).toBeDefined();
+    token = res.body.access_token;
   });
 
-  afterEach(async () => {
+  it('deve criar uma venda', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/vendas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        produto: 'Bolo Teste',
+        quantidade: 2,
+        precoUnitario: 50,
+        valorTotal: 100,
+        canalVenda: 'Balcão',
+        dataVenda: new Date().toISOString(),
+      })
+      .expect(201);
+    expect(res.body.id).toBeDefined();
+  });
+
+  afterAll(async () => {
     await app.close();
   });
 });

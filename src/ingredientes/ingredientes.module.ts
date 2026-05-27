@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { IngredientesService } from './ingredientes.service.js';
-import { IngredientesController } from './ingredientes.controller.js';
-import { IngredienteEntity } from './ingrediente.entity.js';
+import { IngredientesService } from './ingredientes.service';
+import { IngredientesController } from './ingredientes.controller';
+import { IngredienteEntity } from './ingrediente.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
