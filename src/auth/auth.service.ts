@@ -50,12 +50,12 @@ export class AuthService {
 
     // Envio de e-mail temporariamente desabilitado para evitar erro 500
     // O MailService precisa de credenciais SMTP configuradas no .env
-    // if (user.email) {
-    //   await this.mailService.sendWelcomeEmail(
-    //     user.email,
-    //     user.nome || user.username,
-    //   );
-    // }
+    if (user.email) {
+       await this.mailService.sendWelcomeEmail(
+         user.email,
+         user.nome || user.username,
+       );
+     }
 
     const payload = {
       sub: user.id,
