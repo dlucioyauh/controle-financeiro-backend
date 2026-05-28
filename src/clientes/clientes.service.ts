@@ -15,13 +15,23 @@ export class ClientesService {
     email?: string;
     telefone?: string;
     endereco?: string;
+    usuario?: string;            // ← NOVO CAMPO
   }): Promise<Customer> {
     const customer = this.customerRepository.create(data);
     return this.customerRepository.save(customer);
   }
 
+  // Método original (sem filtro) – mantenha para compatibilidade interna, se necessário
   async listar(): Promise<Customer[]> {
     return this.customerRepository.find({ order: { nome: 'ASC' } });
+  }
+
+  // NOVO MÉTODO: filtra por usuário
+  async listarPorUsuario(usuario: string): Promise<Customer[]> {
+    return this.customerRepository.find({
+      where: { usuario },
+      order: { nome: 'ASC' },
+    });
   }
 
   async buscarPorId(id: string): Promise<Customer> {

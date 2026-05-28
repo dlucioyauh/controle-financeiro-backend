@@ -15,8 +15,11 @@ export class IngredientesService {
     return this.ingredienteRepository.save(ingrediente);
   }
 
-  async listar(): Promise<IngredienteEntity[]> {
-    return this.ingredienteRepository.find({ order: { nome: 'ASC' } });
+  async listarPorUsuario(usuario: string): Promise<IngredienteEntity[]> {
+    return this.ingredienteRepository.find({
+      where: { usuario },
+      order: { nome: 'ASC' },
+    });
   }
 
   async buscarPorId(id: string): Promise<IngredienteEntity> {
@@ -27,10 +30,7 @@ export class IngredientesService {
     return ingrediente;
   }
 
-  async atualizar(
-    id: string,
-    data: Partial<IngredienteEntity>,
-  ): Promise<IngredienteEntity> {
+  async atualizar(id: string, data: Partial<IngredienteEntity>): Promise<IngredienteEntity> {
     const ingrediente = await this.buscarPorId(id);
     Object.assign(ingrediente, data);
     return this.ingredienteRepository.save(ingrediente);

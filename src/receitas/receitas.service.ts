@@ -15,8 +15,11 @@ export class ReceitasService {
     return this.receitaRepository.save(receita);
   }
 
-  async listar(): Promise<ReceitaEntity[]> {
-    return this.receitaRepository.find({ order: { nome: 'ASC' } });
+  async listarPorUsuario(usuario: string): Promise<ReceitaEntity[]> {
+    return this.receitaRepository.find({
+      where: { usuario },
+      order: { nome: 'ASC' },
+    });
   }
 
   async buscarPorId(id: string): Promise<ReceitaEntity> {
@@ -27,10 +30,7 @@ export class ReceitasService {
     return receita;
   }
 
-  async atualizar(
-    id: string,
-    data: Partial<ReceitaEntity>,
-  ): Promise<ReceitaEntity> {
+  async atualizar(id: string, data: Partial<ReceitaEntity>): Promise<ReceitaEntity> {
     const receita = await this.buscarPorId(id);
     Object.assign(receita, data);
     return this.receitaRepository.save(receita);

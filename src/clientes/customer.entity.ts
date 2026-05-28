@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('cliente')  // <-- nome simples e novo
+@Entity('cliente')
 export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -22,6 +22,9 @@ export class Customer {
 
   @Column({ type: 'varchar', length: 200, nullable: true })
   endereco!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  usuario!: string | null;   // ← NOVA COLUNA
 
   @CreateDateColumn()
   createdAt!: Date;
