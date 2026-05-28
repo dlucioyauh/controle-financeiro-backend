@@ -10,14 +10,19 @@ import { MailService } from './mail.service';
       useFactory: (config: ConfigService) => ({
         transport: {
           host: config.get('MAIL_HOST'),
-          port: 587,
+          port: Number(config.get('MAIL_PORT') || 587),
           secure: false,
           auth: {
             user: config.get('MAIL_USER'),
             pass: config.get('MAIL_PASS'),
           },
-          tls: { rejectUnauthorized: false },
+          tls: {
+            rejectUnauthorized: false,
+          },
           connectionTimeout: 10000,
+          greetingTimeout: 5000,
+          socketTimeout: 10000,
+          family: 4, // força IPv4 – ESSENCIAL para Railway
         },
         defaults: {
           from: config.get('MAIL_FROM'),
