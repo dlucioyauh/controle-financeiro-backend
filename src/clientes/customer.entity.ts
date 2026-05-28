@@ -1,12 +1,8 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('cliente')
+@Entity('clientes')
 export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -24,11 +20,11 @@ export class Customer {
   endereco!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  usuario!: string | null;   // ← NOVA COLUNA
+  usuario!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
 
   @UpdateDateColumn()
   updatedAt!: Date;
-}// force deploy
+}
