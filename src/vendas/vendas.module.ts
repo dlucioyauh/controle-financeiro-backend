@@ -17,4 +17,4 @@ import { ClientesModule } from '../clientes/clientes.module';  // ← NOVA IMPOR
   controllers: [VendasController],
   providers: [VendasService],
 })
-export class VendasModule {}
+export class VendasModule {}// force deploy
