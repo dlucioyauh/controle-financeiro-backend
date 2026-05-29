@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('clientes')
@@ -26,8 +27,23 @@ export class Customer {
   cidade!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
+  estado!: string | null;          // novo
+
+  @Column({ type: 'varchar', nullable: true })
+  cep!: string | null;             // novo
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  latitude!: number | null;        // novo
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  longitude!: number | null;       // novo
+
+  @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }
