@@ -1,13 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { VendaEntity } from './venda.entity';
+import { UsersService } from '../users/users.service';
+import { ClientesService } from '../clientes/clientes.service';
 
 @Injectable()
 export class VendasService {
   constructor(
     @InjectRepository(VendaEntity)
     private vendaRepository: Repository<VendaEntity>,
+    private usersService: UsersService,
+    private clientesService: ClientesService,
+    private configService: ConfigService,
   ) {}
 
   // --- CRUD ---
@@ -18,6 +24,13 @@ export class VendasService {
 
   async listar(): Promise<VendaEntity[]> {
     return this.vendaRepository.find({ order: { dataVenda: 'DESC' } });
+  }
+
+  async listarPorUsuario(usuario: string): Promise<VendaEntity[]> {
+    return this.vendaRepository.find({
+      where: { usuario },
+      order: { dataVenda: 'DESC' },
+    });
   }
 
   async buscarPorId(id: string): Promise<VendaEntity> {
@@ -44,13 +57,6 @@ export class VendasService {
     }
   }
 
-  async listarPorUsuario(usuario: string): Promise<VendaEntity[]> {
-  return this.vendaRepository.find({
-    where: { usuario },
-    order: { dataVenda: 'DESC' },
-  });
-  }
-
   // --- ESTATÍSTICAS ---
   async getEstatisticas(usuario: string, dataInicio: string, dataFim: string) {
     console.log('### getEstatisticas chamado ###');
@@ -69,12 +75,10 @@ export class VendasService {
 
     console.log('vendas encontradas:', vendas.length);
 
-    // Calcular totais
     const totalReceita = vendas.reduce((sum, v) => sum + Number(v.valorTotal), 0);
     const totalVendas = vendas.length;
     const ticketMedio = totalVendas > 0 ? totalReceita / totalVendas : 0;
 
-    // Produtos mais vendidos
     const produtosMap: Record<string, { nome: string; quantidade: number; receita: number }> = {};
     vendas.forEach((v) => {
       const nome = v.produto;
@@ -88,14 +92,12 @@ export class VendasService {
       .sort((a, b) => b.quantidade - a.quantidade)
       .slice(0, 10);
 
-    // Canais de venda
     const canaisMap: Record<string, number> = {};
     vendas.forEach((v) => {
       const canal = v.canalVenda || 'Balcão';
       canaisMap[canal] = (canaisMap[canal] || 0) + Number(v.valorTotal);
     });
 
-    // Vendas por dia
     const vendasPorDia: Record<string, number> = {};
     vendas.forEach((v) => {
       const dia = new Date(v.dataVenda).toISOString().split('T')[0];
@@ -112,11 +114,7 @@ export class VendasService {
     };
   }
 
-  async getTopClientes(
-    usuario: string,
-    dataInicio: string,
-    dataFim: string,
-  ) {
+  async getTopClientes(usuario: string, dataInicio: string, dataFim: string) {
     const qb = this.vendaRepository
       .createQueryBuilder('v')
       .select('v.clienteNome', 'nome')
@@ -137,5 +135,59 @@ export class VendasService {
       pedidos: Number(r.pedidos),
       faturamento: Number(r.faturamento),
     }));
+  }
+
+  // --- FRETE ---
+  async calcularFrete(usuario: string, clienteId: string) {
+    const user = await this.usersService.findOne(usuario);
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    if (!user.latitudeOrigem || !user.longitudeOrigem) {
+      throw new NotFoundException('Endereço de origem não configurado. Configure nas Configurações.');
+    }
+
+    const cliente = await this.clientesService.buscarPorId(clienteId);
+    if (!cliente) throw new NotFoundException('Cliente não encontrado');
+
+    if (!cliente.latitude || !cliente.longitude) {
+      throw new NotFoundException('Endereço do cliente não possui coordenadas.');
+    }
+
+    const apiKey = this.configService.get('ORS_API_KEY');
+    const url = 'https://api.openrouteservice.org/v2/directions/driving-car';
+    const body = {
+      coordinates: [
+        [user.longitudeOrigem, user.latitudeOrigem],
+        [cliente.longitude, cliente.latitude],
+      ],
+    };
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`Erro na API de roteirização: ${resp.statusText}`);
+    }
+
+    const data = await resp.json();
+    const route = data.routes[0].summary;
+    const distanciaKm = route.distance / 1000;
+    const tempoMinutos = Math.round(route.duration / 60);
+
+    const taxa = Number(user.taxaFreteKm) || 0.8;
+    const valorFrete = distanciaKm * taxa;
+
+    return {
+      distanciaKm: distanciaKm.toFixed(2),
+      tempoMinutos,
+      valorFrete: valorFrete.toFixed(2),
+      taxaFreteKm: taxa,
+    };
   }
 }

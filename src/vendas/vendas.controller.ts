@@ -1,15 +1,5 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  Query,
-  Req,
-  UseGuards,
-  ParseUUIDPipe,
+  Controller, Get, Post, Patch, Delete, Param, Body, Query, Req, UseGuards, ParseUUIDPipe,
 } from '@nestjs/common';
 import { VendasService } from './vendas.service';
 import { VendaEntity } from './venda.entity';
@@ -22,12 +12,9 @@ export class VendasController {
 
   @UseGuards(AuthGuard)
   @Post()
-  criar(
-    @Body() data: Partial<VendaEntity>,
-    @Req() req: Request,
-  ): Promise<VendaEntity> {
+  criar(@Body() data: Partial<VendaEntity>, @Req() req: Request): Promise<VendaEntity> {
     const usuario = (req as any).user?.username;
-    return this.vendasService.criar({ ...data, usuario }); // ← INCLUI usuario
+    return this.vendasService.criar({ ...data, usuario });
   }
 
   @UseGuards(AuthGuard)
@@ -35,6 +22,14 @@ export class VendasController {
   listar(@Req() req: Request): Promise<VendaEntity[]> {
     const usuario = (req as any).user?.username;
     return this.vendasService.listarPorUsuario(usuario);
+  }
+
+  // NOVO ENDPOINT
+  @UseGuards(AuthGuard)
+  @Post('calcular-frete')
+  async calcularFrete(@Req() req: Request, @Body() body: { clienteId: string }) {
+    const usuario = (req as any).user?.username;
+    return this.vendasService.calcularFrete(usuario, body.clienteId);
   }
 
   @UseGuards(AuthGuard)
