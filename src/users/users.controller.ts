@@ -26,7 +26,13 @@ export class UsersController {
   @Patch('perfil')
   async updatePerfil(
     @Req() req: any,
-    @Body() body: { nome?: string; email?: string; nomeNegocio?: string; telefone?: string },
+    @Body()
+    body: {
+      nome?: string;
+      email?: string;
+      nomeNegocio?: string;
+      telefone?: string;
+    },
   ) {
     return this.usersService.updatePerfil(req.user.userId, body);
   }
@@ -37,9 +43,15 @@ export class UsersController {
     @Req() req: any,
     @Body() body: { senhaAtual: string; novaSenha: string },
   ) {
-    return this.usersService.alterarSenha(req.user.userId, body.senhaAtual, body.novaSenha);
+    return this.usersService.alterarSenha(
+      req.user.userId,
+      body.senhaAtual,
+      body.novaSenha,
+    );
   }
 
+  // ADMIN – acessível apenas ao dlucio
+  @UseGuards(AuthGuard)
   @Get()
   async listar(@Req() req: any) {
     if (req.user?.username !== 'dlucio') {
@@ -48,6 +60,7 @@ export class UsersController {
     return this.usersService.listarUsuarios();
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   async deletar(@Param('id') id: string, @Req() req: any) {
     if (req.user?.username !== 'dlucio') {
