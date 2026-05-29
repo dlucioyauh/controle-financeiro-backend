@@ -6,14 +6,16 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-app.enableCors({
+
+  app.enableCors({
   origin: [
     'http://localhost:5173',
-    'https://controle-financeiro-frontend-two.vercel.app'
+    'https://controle-financeiro-frontend-two.vercel.app',
+    'https://controle-financeiro-frontend-git-develop-dlucioyauhs-projects.vercel.app' // ← Staging preview
   ],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
-});
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
