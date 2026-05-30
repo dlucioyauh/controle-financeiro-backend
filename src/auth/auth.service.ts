@@ -39,6 +39,13 @@ export class AuthService {
   }) {
     const user = await this.usersService.create(data);
 
+    // Iniciar trial de 7 dias se o plano for free
+    if (!user.plano || user.plano === 'free') {
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 7);
+      await this.usersService.updatePerfil(user.id, { trialEndsAt: trialEnd });
+    }
+
     // 1. Boas‑vindas ao novo usuário (pode falhar se domínio não for verificado)
     if (user.email) {
       try {
