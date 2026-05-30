@@ -63,12 +63,7 @@ export class UsersService {
 
   async updatePerfil(
     userId: string,
-    data: {
-      nome?: string;
-      email?: string;
-      nomeNegocio?: string;
-      telefone?: string;
-    },
+    data: Partial<UserEntity>,  // ← aceita qualquer campo da entidade
   ) {
     const user = await this.findById(userId);
     if (!user) throw new ConflictException('Usuário não encontrado');
@@ -90,7 +85,6 @@ export class UsersService {
     return { message: 'Senha alterada com sucesso' };
   }
 
-  // ADMIN: listagem com estatísticas agregadas
   async listarUsuarios() {
     const usuarios = await this.usersRepository.find({
       select: ['id', 'username', 'nome', 'email', 'createdAt'],
@@ -102,24 +96,19 @@ export class UsersService {
         const [vendas, despesas, clientes, receitas, ingredientes] =
           await Promise.all([
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM vendas WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM vendas WHERE usuario = $1`, [user.username]
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM despesa WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM despesa WHERE usuario = $1`, [user.username]
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM clientes WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM clientes WHERE usuario = $1`, [user.username]
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM receitas WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM receitas WHERE usuario = $1`, [user.username]
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM ingredientes WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM ingredientes WHERE usuario = $1`, [user.username]
             ),
           ]);
 
