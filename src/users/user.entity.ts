@@ -23,7 +23,7 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   telefone!: string | null;
 
-  // Endereço de origem (para cálculo de frete)
+  // Endereço de origem
   @Column({ type: 'varchar', nullable: true })
   enderecoOrigem!: string | null;
 
@@ -45,9 +45,22 @@ export class UserEntity {
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
   longitudeOrigem!: number | null;
 
-  // Taxa de frete por km (padrão R$ 0,80)
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.80 })
   taxaFreteKm!: number;
+
+  // Dados da empresa
+  @Column({ type: 'varchar', length: 18, nullable: true })
+  cnpj!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  logo!: string | null;  // URL da imagem
+
+  // Plano e preferências
+  @Column({ type: 'varchar', default: 'free' })
+  plano!: string;
+
+  @Column({ type: 'varchar', default: 'dark' })
+  tema!: string;
 
   @CreateDateColumn()
   createdAt!: Date;
