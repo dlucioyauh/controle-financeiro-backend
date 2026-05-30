@@ -14,10 +14,16 @@ export class AuthService {
 
   async signIn(username: string, password: string) {
     const user = await this.usersService.findOne(username);
-    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
 
     const senhaCorreta = await bcrypt.compare(password, user.password);
-    if (!senhaCorreta) throw new UnauthorizedException('Senha incorreta');
+
+    if (!senhaCorreta) {
+      throw new UnauthorizedException('Senha incorreta');
+    }
 
     const payload = { sub: user.id, username: user.username };
     return { access_token: await this.jwtService.signAsync(payload) };
@@ -33,10 +39,22 @@ export class AuthService {
   }) {
     const user = await this.usersService.create(data);
 
-    // Envio de e‑mail temporariamente desabilitado
-    // if (user.email) {
-    //   await this.mailService.sendWelcomeEmail(user.email, user.nome || user.username);
-    // }
+    // 1. Boas‑vindas ao novo usuário (pode falhar se domínio não for verificado)
+    if (user.email) {
+      try {
+        await this.mailService.sendWelcomeEmail(user.email, user.nome || user.username);
+      } catch (error) {
+        console.warn('Não foi possível enviar boas‑vindas ao usuário:', (error as any).message);
+      }
+    }
+
+    // 2. Notificação para o dono
+    try {
+      const assunto = `Novo cadastro: ${user.username} (${user.email || 'sem e‑mail'})`;
+      await this.mailService.sendWelcomeEmail('dlucio.douglas@gmail.com', assunto);
+    } catch (error) {
+      console.warn('Não foi possível notificar o dono:', (error as any).message);
+    }
 
     const payload = { sub: user.id, username: user.username };
     return { access_token: await this.jwtService.sign(payload) };
