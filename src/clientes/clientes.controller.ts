@@ -4,6 +4,7 @@ import {
 import { ClientesService } from './clientes.service';
 import { Customer } from './customer.entity';
 import { AuthGuard } from '../auth/auth.guard';
+import { LimiteClientesGuard } from './limite-clientes.guard'; // ← novo guard
 import type { Request } from 'express';
 
 @Controller('clientes')
@@ -11,8 +12,10 @@ import type { Request } from 'express';
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
+  // Criação de cliente limitada pelo plano
+  @UseGuards(LimiteClientesGuard)
   @Post()
-  criar(@Body() data: Partial<Customer>, @Req() req: Request) {
+  criar(@Body() data: any, @Req() req: Request) {
     const usuario = (req as any).user?.username;
     return this.clientesService.criar({ ...data, usuario });
   }
@@ -23,7 +26,6 @@ export class ClientesController {
     return this.clientesService.listarPorUsuario(usuario);
   }
 
-  // NOVA ROTA PARA O MAPA
   @Get('mapa')
   listarParaMapa(@Req() req: Request) {
     const usuario = (req as any).user?.username;
@@ -36,7 +38,7 @@ export class ClientesController {
   }
 
   @Patch(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: Partial<Customer>) {
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: any) {
     return this.clientesService.atualizar(id, data);
   }
 

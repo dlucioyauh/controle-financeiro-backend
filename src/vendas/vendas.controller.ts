@@ -4,6 +4,7 @@ import {
 import { VendasService } from './vendas.service';
 import { VendaEntity } from './venda.entity';
 import { AuthGuard } from '../auth/auth.guard';
+import { PlanoGuard, RequerPlano } from '../auth/plano.guard'; // ← importações novas
 import type { Request } from 'express';
 
 @Controller('vendas')
@@ -24,8 +25,9 @@ export class VendasController {
     return this.vendasService.listarPorUsuario(usuario);
   }
 
-  // NOVO ENDPOINT
-  @UseGuards(AuthGuard)
+  // Endpoint protegido por plano (mínimo Pro)
+  @UseGuards(AuthGuard, PlanoGuard)
+  @RequerPlano('pro')
   @Post('calcular-frete')
   async calcularFrete(@Req() req: Request, @Body() body: { clienteId: string }) {
     const usuario = (req as any).user?.username;

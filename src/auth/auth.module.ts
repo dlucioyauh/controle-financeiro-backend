@@ -1,9 +1,10 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
+import { PlanoGuard } from './plano.guard';  // ← novo
 import { UsersModule } from '../users/users.module';
 import { MailModule } from '../mail/mail.module';
 
@@ -17,11 +18,11 @@ import { MailModule } from '../mail/mail.module';
       }),
       inject: [ConfigService],
     }),
-    forwardRef(() => UsersModule),   // <-- QUEBRA A CIRCULARIDADE
+    UsersModule,
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard],
-  exports: [AuthGuard, JwtModule],
+  providers: [AuthService, AuthGuard, PlanoGuard],  // ← adicionado
+  exports: [AuthGuard, PlanoGuard, JwtModule],      // ← adicionado
 })
 export class AuthModule {}
