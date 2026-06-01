@@ -4,6 +4,7 @@ import {
 import { ReceitasService } from './receitas.service';
 import { ReceitaEntity } from './receita.entity';
 import { AuthGuard } from '../auth/auth.guard';
+import { LimiteReceitasGuard } from './limite-receitas.guard';
 import type { Request } from 'express';
 
 @Controller('receitas')
@@ -11,6 +12,8 @@ import type { Request } from 'express';
 export class ReceitasController {
   constructor(private readonly receitasService: ReceitasService) {}
 
+  // Limite de criação por plano
+  @UseGuards(LimiteReceitasGuard)
   @Post()
   criar(@Body() data: Partial<ReceitaEntity>, @Req() req: Request) {
     const usuario = (req as any).user?.username;
