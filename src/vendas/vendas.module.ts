@@ -5,16 +5,17 @@ import { VendasService } from './vendas.service';
 import { VendasController } from './vendas.controller';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
-import { ClientesModule } from '../clientes/clientes.module';  // ← NOVA IMPORTAÇÃO
+import { ClientesModule } from '../clientes/clientes.module';
+import { LimiteVendasGuard } from './limite-vendas.guard';   // ← novo
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([VendaEntity]),
     AuthModule,
     UsersModule,
-    ClientesModule,  // ← NOVO MÓDULO
+    ClientesModule,
   ],
   controllers: [VendasController],
-  providers: [VendasService],
+  providers: [VendasService, LimiteVendasGuard],   // ← adicionado
 })
-export class VendasModule {}// force deploy
+export class VendasModule {}
