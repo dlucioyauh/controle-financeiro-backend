@@ -1,14 +1,5 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  ParseUUIDPipe,
-  UseGuards,
-  Req,
+  Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe,
 } from '@nestjs/common';
 import { DespesasService } from './despesas.service';
 import { DespesaEntity } from './despesa.entity';
@@ -22,32 +13,30 @@ export class DespesasController {
 
   @Post()
   criar(
-    @Body()
-    data: {
-      descricao: string;
-      valor: number;
-      data: string;
-      categoria?: string;
-      pessoal?: boolean;
-    },
+    @Body() data: { descricao: string; valor: number; data: string; categoria?: string; pessoal?: boolean; tipo?: string },
     @Req() req: Request,
   ): Promise<DespesaEntity> {
     const usuario = (req as any).user?.username;
     return this.despesasService.criar({ ...data, usuario });
   }
 
-  // Despesas empresariais (padrão)
   @Get()
   listar(@Req() req: Request): Promise<DespesaEntity[]> {
     const usuario = (req as any).user?.username;
     return this.despesasService.listarPorUsuario(usuario);
   }
 
-  // NOVA ROTA: Despesas pessoais
   @Get('pessoais')
   listarPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
     const usuario = (req as any).user?.username;
     return this.despesasService.listarPessoais(usuario);
+  }
+
+  // NOVO: listar receitas pessoais
+  @Get('receitas-pessoais')
+  listarReceitasPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
+    const usuario = (req as any).user?.username;
+    return this.despesasService.listarReceitasPessoais(usuario);
   }
 
   @Get(':id')
@@ -58,14 +47,7 @@ export class DespesasController {
   @Patch(':id')
   atualizar(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body()
-    data: Partial<{
-      descricao: string;
-      valor: number;
-      data: string;
-      categoria: string;
-      pessoal: boolean;
-    }>,
+    @Body() data: Partial<{ descricao: string; valor: number; data: string; categoria: string; pessoal: boolean; tipo: string }>,
   ): Promise<DespesaEntity> {
     return this.despesasService.atualizar(id, data);
   }

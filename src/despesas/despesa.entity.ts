@@ -29,6 +29,9 @@ export class DespesaEntity {
   @Column({ type: 'boolean', default: false })
   pessoal!: boolean;
 
+  @Column({ type: 'varchar', default: 'despesa' })
+  tipo!: string;   // 'despesa' ou 'receita'
+
   @CreateDateColumn()
   createdAt!: Date;
 
