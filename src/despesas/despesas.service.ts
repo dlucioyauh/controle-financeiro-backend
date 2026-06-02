@@ -15,18 +15,31 @@ export class DespesasService {
     valor: number;
     data: string;
     categoria?: string;
-    usuario?: string;        // ← aceita usuario
+    usuario?: string;
+    pessoal?: boolean;
   }): Promise<DespesaEntity> {
     const despesa = this.despesaRepository.create(data);
     return this.despesaRepository.save(despesa);
   }
 
-  async listar(): Promise<DespesaEntity[]> {
-    // manter compatibilidade (sem filtro) – pode ser usado internamente
-    return this.despesaRepository.find({ order: { data: 'DESC' } });
+  // Retorna apenas despesas empresariais (compatível com o legado)
+  async listarPorUsuario(usuario: string): Promise<DespesaEntity[]> {
+    return this.despesaRepository.find({
+      where: { usuario, pessoal: false },
+      order: { data: 'DESC' },
+    });
   }
 
-  async listarPorUsuario(usuario: string): Promise<DespesaEntity[]> {
+  // NOVO: Retorna apenas despesas pessoais
+  async listarPessoais(usuario: string): Promise<DespesaEntity[]> {
+    return this.despesaRepository.find({
+      where: { usuario, pessoal: true },
+      order: { data: 'DESC' },
+    });
+  }
+
+  // Retorna TODAS as despesas do usuário (empresariais + pessoais) – usado no Dashboard
+  async listarTodasPorUsuario(usuario: string): Promise<DespesaEntity[]> {
     return this.despesaRepository.find({
       where: { usuario },
       order: { data: 'DESC' },
@@ -48,6 +61,7 @@ export class DespesasService {
       valor: number;
       data: string;
       categoria: string;
+      pessoal: boolean;
     }>,
   ): Promise<DespesaEntity> {
     const despesa = await this.buscarPorId(id);

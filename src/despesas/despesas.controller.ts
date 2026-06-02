@@ -16,42 +16,60 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { Request } from 'express';
 
 @Controller('despesas')
+@UseGuards(AuthGuard)
 export class DespesasController {
   constructor(private readonly despesasService: DespesasService) {}
 
-  @UseGuards(AuthGuard)
   @Post()
   criar(
-    @Body() data: { descricao: string; valor: number; data: string; categoria?: string },
+    @Body()
+    data: {
+      descricao: string;
+      valor: number;
+      data: string;
+      categoria?: string;
+      pessoal?: boolean;
+    },
     @Req() req: Request,
   ): Promise<DespesaEntity> {
     const usuario = (req as any).user?.username;
     return this.despesasService.criar({ ...data, usuario });
   }
 
-  @UseGuards(AuthGuard)
+  // Despesas empresariais (padrão)
   @Get()
   listar(@Req() req: Request): Promise<DespesaEntity[]> {
     const usuario = (req as any).user?.username;
     return this.despesasService.listarPorUsuario(usuario);
   }
 
-  @UseGuards(AuthGuard)
+  // NOVA ROTA: Despesas pessoais
+  @Get('pessoais')
+  listarPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
+    const usuario = (req as any).user?.username;
+    return this.despesasService.listarPessoais(usuario);
+  }
+
   @Get(':id')
   buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<DespesaEntity> {
     return this.despesasService.buscarPorId(id);
   }
 
-  @UseGuards(AuthGuard)
   @Patch(':id')
   atualizar(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<{ descricao: string; valor: number; data: string; categoria: string }>,
+    @Body()
+    data: Partial<{
+      descricao: string;
+      valor: number;
+      data: string;
+      categoria: string;
+      pessoal: boolean;
+    }>,
   ): Promise<DespesaEntity> {
     return this.despesasService.atualizar(id, data);
   }
 
-  @UseGuards(AuthGuard)
   @Delete(':id')
   remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.despesasService.remover(id);

@@ -18,13 +18,16 @@ export class DespesaEntity {
   valor!: number;
 
   @Column({ type: 'date' })
-  data!: string; // formato 'YYYY-MM-DD'
+  data!: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   categoria!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  usuario!: string | null;   // ← NOVA COLUNA
+  usuario!: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  pessoal!: boolean;
 
   @CreateDateColumn()
   createdAt!: Date;
