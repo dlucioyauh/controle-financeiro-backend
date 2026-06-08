@@ -6,10 +6,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UsersService } from '../users/users.service';
-
-// Decorator para indicar qual plano mínimo é exigido
-export const PLANO_MINIMO = 'plano_minimo';
 import { SetMetadata } from '@nestjs/common';
+
+export const PLANO_MINIMO = 'plano_minimo';
 export const RequerPlano = (plano: string) => SetMetadata(PLANO_MINIMO, plano);
 
 @Injectable()
@@ -21,7 +20,7 @@ export class PlanoGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const planoMinimo = this.reflector.get<string>(PLANO_MINIMO, context.getHandler());
-    if (!planoMinimo) return true; // se não tiver decorator, libera
+    if (!planoMinimo) return true; // sem decorator = acesso livre
 
     const request = context.switchToHttp().getRequest();
     const username = request.user?.username;
@@ -30,22 +29,21 @@ export class PlanoGuard implements CanActivate {
     const user = await this.usersService.findOne(username);
     if (!user) throw new ForbiddenException('Usuário não encontrado');
 
-    // Verificar se o trial expirou (plano free e passou da data)
+    // Determina o nível de acesso efetivo
+    const hierarquia = ['free', 'basic', 'pro', 'premium'];
+    let nivelEfetivo = hierarquia.indexOf(user.plano || 'free');
+
+    // Se o plano for 'free' mas ainda estiver dentro do trial, trata como 'pro'
     if (user.plano === 'free' && user.trialEndsAt) {
       const agora = new Date();
-      if (agora > new Date(user.trialEndsAt)) {
-        throw new ForbiddenException(
-          'Seu período de teste expirou. Faça upgrade para continuar.',
-        );
+      if (agora <= new Date(user.trialEndsAt)) {
+        nivelEfetivo = hierarquia.indexOf('pro'); // acesso Pro durante o trial
       }
     }
 
-    // Hierarquia de planos (free < basic < pro < premium)
-    const hierarquia = ['free', 'basic', 'pro', 'premium'];
-    const nivelUsuario = hierarquia.indexOf(user.plano || 'free');
     const nivelExigido = hierarquia.indexOf(planoMinimo);
 
-    if (nivelUsuario < nivelExigido) {
+    if (nivelEfetivo < nivelExigido) {
       throw new ForbiddenException(
         `Seu plano (${user.plano}) não permite esta funcionalidade. Faça upgrade para ${planoMinimo} ou superior.`,
       );
