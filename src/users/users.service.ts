@@ -64,9 +64,16 @@ export class UsersService {
   async updatePerfil(
     userId: string,
     data: Partial<UserEntity>,
+    currentUsername?: string,
   ) {
     const user = await this.findById(userId);
     if (!user) throw new ConflictException('Usuário não encontrado');
+
+    // Apenas o dono (dlucio) pode alterar o plano manualmente
+    if (currentUsername !== 'dlucio') {
+      delete data.plano;
+    }
+
     Object.assign(user, data);
     return this.usersRepository.save(user);
   }
@@ -135,7 +142,6 @@ export class UsersService {
     return this.usersRepository.delete(id);
   }
 
-  // Atualiza usuário pelo customerId do Stripe
   async updateByStripeCustomer(customerId: string, data: Partial<UserEntity>) {
     await this.usersRepository.update(
       { stripeCustomerId: customerId },

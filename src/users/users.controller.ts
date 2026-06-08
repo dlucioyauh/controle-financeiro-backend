@@ -32,9 +32,19 @@ export class UsersController {
       email?: string;
       nomeNegocio?: string;
       telefone?: string;
+      enderecoOrigem?: string;
+      bairroOrigem?: string;
+      cidadeOrigem?: string;
+      estadoOrigem?: string;
+      cepOrigem?: string;
+      taxaFreteKm?: number;
+      cnpj?: string;
+      logo?: string;
+      plano?: string;
     },
   ) {
-    return this.usersService.updatePerfil(req.user.userId, body);
+    const username = req.user?.username;
+    return this.usersService.updatePerfil(req.user.userId, body, username);
   }
 
   @UseGuards(AuthGuard)
@@ -50,7 +60,6 @@ export class UsersController {
     );
   }
 
-  // ADMIN – acessível apenas ao dlucio
   @UseGuards(AuthGuard)
   @Get()
   async listar(@Req() req: any) {
