@@ -9,8 +9,9 @@ import { UsersModule } from './users/users.module';
 import { IngredientesModule } from './ingredientes/ingredientes.module';
 import { ReceitasModule } from './receitas/receitas.module';
 import { VendasModule } from './vendas/vendas.module';
-import { MailModule } from './mail/mail.module';
 import { ClientesModule } from './clientes/clientes.module';
+import { MailModule } from './mail/mail.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ClientesModule } from './clientes/clientes.module';
     VendasModule,
     ClientesModule,
     MailModule,
+    StripeModule,
   ],
   providers: [
     {

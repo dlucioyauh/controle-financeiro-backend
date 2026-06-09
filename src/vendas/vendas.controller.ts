@@ -5,14 +5,14 @@ import { VendasService } from './vendas.service';
 import { VendaEntity } from './venda.entity';
 import { AuthGuard } from '../auth/auth.guard';
 import { PlanoGuard, RequerPlano } from '../auth/plano.guard';
-import { LimiteVendasGuard } from './limite-vendas.guard';   // ← novo
+import { LimiteVendasGuard } from './limite-vendas.guard';
 import type { Request } from 'express';
 
 @Controller('vendas')
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
-  @UseGuards(AuthGuard, LimiteVendasGuard)   // ← adicionado LimiteVendasGuard
+  @UseGuards(AuthGuard, LimiteVendasGuard)
   @Post()
   criar(@Body() data: Partial<VendaEntity>, @Req() req: Request): Promise<VendaEntity> {
     const usuario = (req as any).user?.username;
@@ -26,6 +26,7 @@ export class VendasController {
     return this.vendasService.listarPorUsuario(usuario);
   }
 
+  // Cálculo de frete restrito a Pro/Premium (mantido)
   @UseGuards(AuthGuard, PlanoGuard)
   @RequerPlano('pro')
   @Post('calcular-frete')
@@ -34,9 +35,8 @@ export class VendasController {
     return this.vendasService.calcularFrete(usuario, body.clienteId);
   }
 
-  // Relatórios – exigem plano Basic ou superior
-  @UseGuards(AuthGuard, PlanoGuard)
-  @RequerPlano('basic')
+  // Estatísticas LIBERADAS para todos os planos (removido @RequerPlano)
+  @UseGuards(AuthGuard)
   @Get('estatisticas')
   async getEstatisticas(
     @Query('dataInicio') dataInicio: string,
@@ -47,8 +47,7 @@ export class VendasController {
     return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
   }
 
-  @UseGuards(AuthGuard, PlanoGuard)
-  @RequerPlano('basic')
+  @UseGuards(AuthGuard)
   @Get('estatisticas-clientes')
   async getEstatisticasClientes(
     @Query('dataInicio') dataInicio: string,
