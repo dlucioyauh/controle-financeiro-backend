@@ -5,7 +5,7 @@ import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class StripeService {
-  private stripe: any;   // <-- usamos any para evitar conflitos de tipo
+  private stripe: any;
 
   constructor(
     private configService: ConfigService,
@@ -13,9 +13,7 @@ export class StripeService {
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) throw new Error('STRIPE_SECRET_KEY não configurado');
-    this.stripe = new Stripe(secretKey, {
-      // não definimos apiVersion explicitamente, usa a padrão da biblioteca
-    });
+    this.stripe = new Stripe(secretKey, {});
   }
 
   async createCheckoutSession(
@@ -53,45 +51,47 @@ export class StripeService {
 
   async handleWebhookEvent(payload: Buffer, signature: string) {
     const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    console.log('🔑 Webhook Secret exists:', !!webhookSecret);
     if (!webhookSecret) throw new Error('STRIPE_WEBHOOK_SECRET não configurado');
 
     let event: any;
     try {
       event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      console.log('✅ Evento verificado:', event.type);
     } catch (err: any) {
-      const message = err?.message ?? 'Erro desconhecido';
-      throw new Error(`Webhook signature verification failed: ${message}`);
+      console.error('❌ Erro na verificação do webhook:', err.message);
+      throw new Error(`Webhook signature verification failed: ${err.message}`);
     }
 
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        const customerId = session.customer as string;
-        const subscriptionId = session.subscription as string;
-        const priceId = session.metadata?.priceId;
-        const plano = this.getPlanFromPriceId(priceId || '');
-        await this.usersService.updateByStripeCustomer(customerId, {
-          stripeSubscriptionId: subscriptionId,
-          stripeSubscriptionStatus: 'active',
-          plano,
-        } as any);
-        break;
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string;
+      const priceId = session.metadata?.priceId;
+
+      console.log('📦 Dados da sessão:', { customerId, subscriptionId, priceId });
+
+      const basic = this.configService.get<string>('STRIPE_PRICE_BASIC');
+      const pro = this.configService.get<string>('STRIPE_PRICE_PRO');
+      const premium = this.configService.get<string>('STRIPE_PRICE_PREMIUM');
+      console.log('📋 Variáveis de ambiente:', { basic, pro, premium });
+
+      const plano = this.getPlanFromPriceId(priceId || '');
+      console.log('🎯 Plano mapeado:', plano);
+
+      await this.usersService.updateByStripeCustomer(customerId, {
+        stripeSubscriptionId: subscriptionId,
+        stripeSubscriptionStatus: 'active',
+        plano,
+      } as any);
+    } else if (event.type === 'customer.subscription.updated') {
+      const subscription = event.data.object;
+      const customerId = subscription.customer as string;
+      const updateData: any = { stripeSubscriptionStatus: subscription.status };
+      if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+        updateData.plano = 'free';
       }
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object;
-        const customerId = subscription.customer as string;
-        const updateData: any = {
-          stripeSubscriptionStatus: subscription.status,
-        };
-        if (
-          subscription.status === 'canceled' ||
-          subscription.status === 'unpaid'
-        ) {
-          updateData.plano = 'free';
-        }
-        await this.usersService.updateByStripeCustomer(customerId, updateData);
-        break;
-      }
+      await this.usersService.updateByStripeCustomer(customerId, updateData);
     }
   }
 
@@ -101,7 +101,11 @@ export class StripeService {
       [this.configService.get<string>('STRIPE_PRICE_PRO') || '']: 'pro',
       [this.configService.get<string>('STRIPE_PRICE_PREMIUM') || '']: 'premium',
     };
-    return mapping[priceId] || 'free';
+    console.log('🗺️ Mapeamento:', mapping);
+    console.log('🔎 Buscando por:', priceId);
+    const result = mapping[priceId] || 'free';
+    console.log('🏁 Resultado do mapeamento:', result);
+    return result;
   }
 
   async createPortalSession(customerId: string) {

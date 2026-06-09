@@ -8,11 +8,14 @@ export class StripeWebhookController {
 
   @Post('webhook')
   async handleWebhook(
-    @Req() req: Request & { rawBody?: Buffer },
+    @Req() req: Request,
     @Headers('stripe-signature') signature: string,
   ) {
-    const rawBody = req.rawBody;
-    if (!rawBody || !signature) return { received: false };
+    // O middleware raw já transformou req.body em um Buffer
+    const rawBody = req.body;
+    if (!rawBody || !signature) {
+      return { received: false };
+    }
     await this.stripeService.handleWebhookEvent(rawBody, signature);
     return { received: true };
   }
