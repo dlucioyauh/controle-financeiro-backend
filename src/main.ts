@@ -1,10 +1,21 @@
 import * as bodyParser from 'body-parser';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { SentryFilter } from './filters/sentry.filter';
 
 async function bootstrap() {
+  // Inicializa o Sentry antes de qualquer coisa
+  Sentry.init({
+    dsn: 'https://20605ba23be3149ba2c580ef3ee08979@o4511559401668608.ingest.us.sentry.io/4511559409598464', // ← SUBSTITUA PELO SEU DSN
+    integrations: [nodeProfilingIntegration()],
+    tracesSampleRate: 1.0,
+    environment: process.env.RAILWAY_ENVIRONMENT || 'development',
+  });
+
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.enableCors({
@@ -17,7 +28,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Middleware para preservar o corpo bruto na rota de webhook do Stripe
   app.use('/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
 
   app.useGlobalPipes(
@@ -27,6 +37,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Filtro global do Sentry – captura toda exceção não tratada
+  app.useGlobalFilters(new SentryFilter());
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3001;
