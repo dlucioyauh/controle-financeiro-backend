@@ -12,6 +12,7 @@ import { VendasModule } from './vendas/vendas.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { MailModule } from './mail/mail.module';
 import { StripeModule } from './stripe/stripe.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { StripeModule } from './stripe/stripe.module';
     ClientesModule,
     MailModule,
     StripeModule,
+    HealthModule,
   ],
   providers: [
     {
