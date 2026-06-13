@@ -17,6 +17,7 @@
       "*": ["./src/*"]
     },
     "incremental": true,
+    "types": ["jest"],
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
