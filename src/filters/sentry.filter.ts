@@ -33,7 +33,6 @@ export class SentryFilter implements ExceptionFilter {
   private redactSensitiveData(body: any): any {
     if (!body || typeof body !== 'object') return body;
 
-    // Lista de campos sensíveis (case-insensitive) - tudo em lowercase
     const sensitiveFields = new Set([
       'password',
       'senha',
