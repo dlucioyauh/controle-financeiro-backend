@@ -1,9 +1,10 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe,
+  Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe, Query,
 } from '@nestjs/common';
 import { DespesasService } from './despesas.service';
 import { DespesaEntity } from './despesa.entity';
 import { AuthGuard } from '../auth/auth.guard';
+import { FilterDespesasDto } from './dto/filter-despesas.dto';
 import type { Request } from 'express';
 
 @Controller('despesas')
@@ -32,11 +33,19 @@ export class DespesasController {
     return this.despesasService.listarPessoais(usuario);
   }
 
-  // NOVO: listar receitas pessoais
   @Get('receitas-pessoais')
   listarReceitasPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
     const usuario = (req as any).user?.username;
     return this.despesasService.listarReceitasPessoais(usuario);
+  }
+
+  @Get('totais')
+  async getTotais(
+    @Req() req: Request,
+    @Query() filter: FilterDespesasDto,
+  ) {
+    const usuario = (req as any).user?.username;
+    return this.despesasService.getTotais(usuario, filter.pessoal, filter.tipo);
   }
 
   @Get(':id')

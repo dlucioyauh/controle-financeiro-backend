@@ -17,7 +17,7 @@ export class DespesasService {
     categoria?: string;
     usuario?: string;
     pessoal?: boolean;
-    tipo?: string;   // ← novo campo
+    tipo?: string;
   }): Promise<DespesaEntity> {
     const despesa = this.despesaRepository.create(data);
     return this.despesaRepository.save(despesa);
@@ -80,5 +80,15 @@ export class DespesasService {
   async remover(id: string): Promise<void> {
     const resultado = await this.despesaRepository.delete(id);
     if (resultado.affected === 0) throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
+  }
+
+  async getTotais(usuario: string, pessoal: boolean = false, tipo?: 'despesa' | 'receita'): Promise<{ total: number; quantidade: number }> {
+    const where: any = { usuario };
+    if (pessoal !== undefined) where.pessoal = pessoal;
+    if (tipo) where.tipo = tipo;
+
+    const registros = await this.despesaRepository.find({ where });
+    const total = registros.reduce((sum, r) => sum + Number(r.valor), 0);
+    return { total, quantidade: registros.length };
   }
 }
