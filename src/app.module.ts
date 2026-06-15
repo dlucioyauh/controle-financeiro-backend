@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -29,12 +30,11 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
       synchronize: false,
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 100,
-      },
-    ]),
+    CacheModule.register({
+      ttl: 300, // segundos (5 minutos)
+      max: 100, // número máximo de itens em cache
+    }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     DespesasModule,
     AuthModule,
     UsersModule,
