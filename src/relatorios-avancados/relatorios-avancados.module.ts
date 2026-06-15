@@ -6,13 +6,15 @@ import { Customer } from '../clientes/customer.entity';
 import { RelatoriosAvancadosService } from './relatorios-avancados.service';
 import { RelatoriosAvancadosController } from './relatorios-avancados.controller';
 import { FeatureFlagsModule } from '../feature-flags/feature-flags.module';
-import { UsersModule } from '../users/users.module';  // ← Adicionado
+import { UsersModule } from '../users/users.module';
+import { AuthModule } from '../auth/auth.module';  // ← Adicionado
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([VendaEntity, DespesaEntity, Customer]),
     FeatureFlagsModule,
-    UsersModule,   // ← Necessário para o PlanoGuard
+    UsersModule,
+    AuthModule,  // ← Necessário para o AuthGuard
   ],
   controllers: [RelatoriosAvancadosController],
   providers: [RelatoriosAvancadosService],
