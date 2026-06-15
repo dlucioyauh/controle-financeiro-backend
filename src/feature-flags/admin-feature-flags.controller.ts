@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Param, Body, UseGuards, Req, ForbiddenException } from '@nestjs/common';
 import { FeatureFlagsService } from './feature-flags.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @Controller('admin/features')
 @UseGuards(AuthGuard)
