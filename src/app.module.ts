@@ -13,6 +13,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { MailModule } from './mail/mail.module';
 import { StripeModule } from './stripe/stripe.module';
 import { HealthModule } from './health/health.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { HealthModule } from './health/health.module';
     MailModule,
     StripeModule,
     HealthModule,
+    FeatureFlagsModule,
   ],
   providers: [
     {
