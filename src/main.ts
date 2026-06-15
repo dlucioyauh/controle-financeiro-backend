@@ -10,7 +10,7 @@ import { SentryFilter } from './filters/sentry.filter';
 async function bootstrap() {
   // Inicializa o Sentry antes de qualquer coisa
   Sentry.init({
-    dsn: 'https://20605ba23be3149ba2c580ef3ee08979@o4511559401668608.ingest.us.sentry.io/4511559409598464', // ← SUBSTITUA PELO SEU DSN
+    dsn: 'https://20605ba23be3149ba2c580ef3ee08979@o4511559401668608.ingest.us.sentry.io/4511559409598464',
     integrations: [nodeProfilingIntegration()],
     tracesSampleRate: 1.0,
     environment: process.env.RAILWAY_ENVIRONMENT || 'development',
@@ -18,14 +18,16 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
+  // Configuração CORS aprimorada para aceitar previews do Vercel
   app.enableCors({
     origin: [
       'http://localhost:5173',
       'https://controle-financeiro-frontend-two.vercel.app',
-      'https://controle-financeiro-frontend-git-develop-dlucioyauhs-projects.vercel.app'
+      /\.vercel\.app$/,               // Aceita qualquer subdomínio .vercel.app
     ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: 'Content-Type, Authorization',
   });
 
   app.use('/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
