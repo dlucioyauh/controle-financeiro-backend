@@ -2,55 +2,46 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
-  Delete,
-  Param,
   Body,
-  Req,
+  Param,
+  Delete,
   UseGuards,
-  ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { VendasService } from './vendas.service';
-import { VendaEntity } from './venda.entity';
 import { AuthGuard } from '../auth/auth.guard';
 import { PlanoGuard } from '../auth/plano.guard';
 import type { Request } from 'express';
 
 @Controller('vendas')
-@UseGuards(AuthGuard, PlanoGuard) // aplica os dois guards em todas as rotas
+@UseGuards(AuthGuard, PlanoGuard)
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
   @Post()
-  criar(
-    @Body() data: any,
-    @Req() req: Request,
-  ): Promise<VendaEntity> {
+  create(@Body() createVendaDto: any, @Req() req: Request) {
     const usuario = (req as any).user?.username;
-    return this.vendasService.criar({ ...data, usuario });
+    // O service tem método 'criar' que aceita Partial<VendaEntity>
+    return this.vendasService.criar({ ...createVendaDto, usuario });
   }
 
   @Get()
-  listar(@Req() req: Request): Promise<VendaEntity[]> {
+  findAll(@Req() req: Request) {
     const usuario = (req as any).user?.username;
+    // O service tem método 'listarPorUsuario'
     return this.vendasService.listarPorUsuario(usuario);
   }
 
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<VendaEntity> {
+  findOne(@Param('id') id: string) {
+    // O service tem método 'buscarPorId'
     return this.vendasService.buscarPorId(id);
   }
 
-  @Patch(':id')
-  atualizar(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: any,
-  ): Promise<VendaEntity> {
-    return this.vendasService.atualizar(id, data);
-  }
-
   @Delete(':id')
-  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  remove(@Param('id') id: string, @Req() req: Request) {
+    const usuario = (req as any).user?.username;
+    // O service tem método 'remover' (apenas id)
     return this.vendasService.remover(id);
   }
 }
