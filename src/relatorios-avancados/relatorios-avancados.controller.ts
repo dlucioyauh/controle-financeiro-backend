@@ -19,7 +19,6 @@ export class RelatoriosAvancadosController {
     const user = (req as any).user;
     const usuario = user.username;
 
-    // Verifica se a feature flag está ativa
     const enabled = await this.featureFlags.findByName('novo_relatorio');
     if (!enabled) {
       throw new ForbiddenException('Relatórios avançados não disponíveis. Contate o administrador.');
