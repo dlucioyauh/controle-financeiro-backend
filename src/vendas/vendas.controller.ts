@@ -11,11 +11,11 @@ import {
 } from '@nestjs/common';
 import { VendasService } from './vendas.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { PlanoGuard } from '../auth/plano.guard';
+// import { PlanoGuard } from '../auth/plano.guard'; ← removido
 import type { Request } from 'express';
 
 @Controller('vendas')
-@UseGuards(AuthGuard, PlanoGuard)
+@UseGuards(AuthGuard) // apenas autenticação, sem plano guard
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
@@ -31,7 +31,6 @@ export class VendasController {
     return this.vendasService.listarPorUsuario(usuario);
   }
 
-  // 🟢 Estatísticas gerais (vendas, produtos, etc)
   @Get('estatisticas')
   async getEstatisticas(
     @Query('dataInicio') dataInicio: string,
@@ -42,7 +41,6 @@ export class VendasController {
     return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
   }
 
-  // 🟢 Estatísticas de clientes (top clientes)
   @Get('estatisticas-clientes')
   async getEstatisticasClientes(
     @Query('dataInicio') dataInicio: string,
