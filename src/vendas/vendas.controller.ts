@@ -7,6 +7,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { VendasService } from './vendas.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -21,27 +22,33 @@ export class VendasController {
   @Post()
   create(@Body() createVendaDto: any, @Req() req: Request) {
     const usuario = (req as any).user?.username;
-    // O service tem método 'criar' que aceita Partial<VendaEntity>
     return this.vendasService.criar({ ...createVendaDto, usuario });
   }
 
   @Get()
   findAll(@Req() req: Request) {
     const usuario = (req as any).user?.username;
-    // O service tem método 'listarPorUsuario'
     return this.vendasService.listarPorUsuario(usuario);
+  }
+
+  // 🟢 Rota específica deve vir antes da rota com parâmetro :id
+  @Get('estatisticas')
+  async getEstatisticas(
+    @Query('dataInicio') dataInicio: string,
+    @Query('dataFim') dataFim: string,
+    @Req() req: Request,
+  ) {
+    const usuario = (req as any).user?.username;
+    return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    // O service tem método 'buscarPorId'
     return this.vendasService.buscarPorId(id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    // O service tem método 'remover' (apenas id)
+  remove(@Param('id') id: string) {
     return this.vendasService.remover(id);
   }
 }

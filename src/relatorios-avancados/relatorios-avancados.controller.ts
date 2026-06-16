@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { PlanoGuard } from '../auth/plano.guard';
@@ -24,6 +24,11 @@ export class RelatoriosAvancadosController {
       throw new ForbiddenException('Relatórios avançados não disponíveis. Contate o administrador.');
     }
 
-    return this.service.getResumoGeral(usuario, filtros);
+    try {
+      return await this.service.getResumoGeral(usuario, filtros);
+    } catch (error) {
+      const err = error as Error;
+      throw new InternalServerErrorException(`Erro ao processar relatório: ${err.message}`);
+    }
   }
 }
