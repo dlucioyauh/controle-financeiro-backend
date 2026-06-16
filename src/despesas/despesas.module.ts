@@ -3,11 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DespesasController } from './despesas.controller';
 import { DespesasService } from './despesas.service';
 import { DespesaEntity } from './despesa.entity';
+import { AuthModule } from '../auth/auth.module'; // ← Importante
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DespesaEntity])],
+  imports: [
+    TypeOrmModule.forFeature([DespesaEntity]),
+    AuthModule, // ← Adiciona o módulo de autenticação
+  ],
   controllers: [DespesasController],
   providers: [DespesasService],
-  exports: [DespesasService], // ← ESSENCIAL
+  exports: [DespesasService],
 })
 export class DespesasModule {}
