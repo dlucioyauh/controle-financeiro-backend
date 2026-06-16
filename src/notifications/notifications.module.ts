@@ -10,6 +10,7 @@ import { UsersModule } from '../users/users.module';
 import { MailModule } from '../mail/mail.module';
 import { VendasModule } from '../vendas/vendas.module';
 import { DespesasModule } from '../despesas/despesas.module';
+import { AuthModule } from '../auth/auth.module'; // ← Importante
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DespesasModule } from '../despesas/despesas.module';
     MailModule,
     VendasModule,
     DespesasModule,
+    AuthModule, // ← Adicionado para resolver o AuthGuard
   ],
   controllers: [NotificationsController],
   providers: [NotificationsService, NotificationsScheduler],
