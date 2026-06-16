@@ -1,3 +1,5 @@
+// src/vendas/vendas.controller.ts
+
 import {
   Controller,
   Get,
@@ -31,7 +33,7 @@ export class VendasController {
     return this.vendasService.listarPorUsuario(usuario);
   }
 
-  // 🟢 Rota específica deve vir antes da rota com parâmetro :id
+  // 🟢 CORREÇÃO: Rota estática 'estatisticas' declarada antes da rota dinâmica ':id'
   @Get('estatisticas')
   async getEstatisticas(
     @Query('dataInicio') dataInicio: string,

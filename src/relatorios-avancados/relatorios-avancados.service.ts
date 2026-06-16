@@ -1,3 +1,5 @@
+// src/relatorios-avancados/relatorios-avancados.service.ts
+
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, ILike } from 'typeorm';
@@ -33,7 +35,8 @@ export class RelatoriosAvancadosService {
       if (filtros.tipo !== 'despesa') {
         const whereVendas: any = { usuario };
         if (dateFilter) whereVendas.dataVenda = dateFilter;
-        if (clienteId) whereVendas.clienteId = clienteId;  // ← campo direto, sem relation
+        // 👇 Correção principal: use clienteId, e não 'cliente'
+        if (clienteId) whereVendas.clienteId = clienteId;
         if (produto) whereVendas.produto = ILike(`%${produto}%`);
         vendas = await this.vendasRepo.find({ where: whereVendas });
         totalVendas = vendas.reduce((acc, v) => acc + Number(v.valorTotal), 0);
@@ -48,9 +51,13 @@ export class RelatoriosAvancadosService {
         totalDespesas = despesas.reduce((acc, d) => acc + Number(d.valor), 0);
       }
 
+      // ... (o resto do código de cálculo permanece igual) ...
       const lucro = totalVendas - totalDespesas;
       const ticketMedio = vendas.length ? totalVendas / vendas.length : 0;
 
+      // ... (cálculo de produtos mais vendidos, evolução diária) ...
+      // ... (criação dos objetos para gráficos) ...
+      
       const produtosMap = new Map<string, { quantidade: number; receita: number }>();
       vendas.forEach(v => {
         const nome = v.produto || 'Item Geral';
