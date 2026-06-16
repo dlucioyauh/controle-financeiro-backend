@@ -5,6 +5,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { UserPreferences } from './user-preferences.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -12,6 +13,8 @@ export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private usersRepository: Repository<UserEntity>,
+    @InjectRepository(UserPreferences)
+    private preferencesRepository: Repository<UserPreferences>,
   ) {}
 
   async create(data: {
@@ -43,7 +46,13 @@ export class UsersService {
       telefone: data.telefone || null,
     });
 
-    return this.usersRepository.save(novoUsuario);
+    const savedUser = await this.usersRepository.save(novoUsuario);
+
+    // Criar preferências padrão para o novo usuário
+    const prefs = this.preferencesRepository.create({ userId: savedUser.id });
+    await this.preferencesRepository.save(prefs);
+
+    return savedUser;
   }
 
   async findOne(username: string) {
@@ -69,7 +78,6 @@ export class UsersService {
     const user = await this.findById(userId);
     if (!user) throw new ConflictException('Usuário não encontrado');
 
-    // Apenas o dono (dlucio) pode alterar o plano manualmente
     if (currentUsername !== 'dlucio') {
       delete data.plano;
     }

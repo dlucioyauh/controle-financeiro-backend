@@ -16,6 +16,7 @@ import { StripeModule } from './stripe/stripe.module';
 import { HealthModule } from './health/health.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { RelatoriosAvancadosModule } from './relatorios-avancados/relatorios-avancados.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { RelatoriosAvancadosModule } from './relatorios-avancados/relatorios-ava
     HealthModule,
     FeatureFlagsModule,
     RelatoriosAvancadosModule,
+    NotificationsModule,
   ],
   providers: [
     {
