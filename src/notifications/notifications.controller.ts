@@ -10,7 +10,8 @@ export class NotificationsController {
 
   @Get('preferences')
   async getPreferences(@Req() req: Request) {
-    const userId = (req as any).user?.userId;
+    // Fallback: userId pode estar em user.userId ou user.sub
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     return this.notificationsService.getPreferences(userId);
   }
 
@@ -19,7 +20,7 @@ export class NotificationsController {
     @Req() req: Request,
     @Body() body: { trialRemindersEnabled?: boolean; reportFrequency?: 'weekly' | 'monthly' | 'never' },
   ) {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
     return this.notificationsService.updatePreferences(userId, body);
   }
 }
