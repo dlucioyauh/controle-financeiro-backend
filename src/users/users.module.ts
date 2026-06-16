@@ -1,14 +1,13 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from './user.entity';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { AuthModule } from '../auth/auth.module';
+import { UserEntity } from './user.entity';
+import { UserPreferences } from './user-preferences.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity]),
-    forwardRef(() => AuthModule),   // <-- QUEBRA A CIRCULARIDADE
+    TypeOrmModule.forFeature([UserEntity, UserPreferences]), // ← adicionado UserPreferences
   ],
   controllers: [UsersController],
   providers: [UsersService],
