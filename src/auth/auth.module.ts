@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
-import { PlanoGuard } from './plano.guard';  // ← novo
+import { PlanoGuard } from './plano.guard';
 import { UsersModule } from '../users/users.module';
 import { MailModule } from '../mail/mail.module';
 
@@ -18,11 +18,11 @@ import { MailModule } from '../mail/mail.module';
       }),
       inject: [ConfigService],
     }),
-    UsersModule,
+    forwardRef(() => UsersModule), // ← Usar forwardRef para quebrar o ciclo
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, PlanoGuard],  // ← adicionado
-  exports: [AuthGuard, PlanoGuard, JwtModule],      // ← adicionado
+  providers: [AuthService, AuthGuard, PlanoGuard],
+  exports: [AuthGuard, PlanoGuard, JwtModule],
 })
 export class AuthModule {}
