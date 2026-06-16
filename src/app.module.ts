@@ -15,6 +15,7 @@ import { MailModule } from './mail/mail.module';
 import { StripeModule } from './stripe/stripe.module';
 import { HealthModule } from './health/health.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
+import { RelatoriosAvancadosModule } from './relatorios-avancados/relatorios-avancados.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     StripeModule,
     HealthModule,
     FeatureFlagsModule,
+    RelatoriosAvancadosModule,
   ],
   providers: [
     {

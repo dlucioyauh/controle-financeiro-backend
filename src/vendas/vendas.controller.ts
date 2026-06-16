@@ -1,42 +1,36 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Query, Req, UseGuards, ParseUUIDPipe,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  Query,
 } from '@nestjs/common';
 import { VendasService } from './vendas.service';
-import { VendaEntity } from './venda.entity';
 import { AuthGuard } from '../auth/auth.guard';
-import { PlanoGuard, RequerPlano } from '../auth/plano.guard';
-import { LimiteVendasGuard } from './limite-vendas.guard';
+// import { PlanoGuard } from '../auth/plano.guard'; ← removido
 import type { Request } from 'express';
 
 @Controller('vendas')
+@UseGuards(AuthGuard) // apenas autenticação, sem plano guard
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
-  @UseGuards(AuthGuard, LimiteVendasGuard)
   @Post()
-  criar(@Body() data: Partial<VendaEntity>, @Req() req: Request): Promise<VendaEntity> {
+  create(@Body() createVendaDto: any, @Req() req: Request) {
     const usuario = (req as any).user?.username;
-    return this.vendasService.criar({ ...data, usuario });
+    return this.vendasService.criar({ ...createVendaDto, usuario });
   }
 
-  @UseGuards(AuthGuard)
   @Get()
-  listar(@Req() req: Request): Promise<VendaEntity[]> {
+  findAll(@Req() req: Request) {
     const usuario = (req as any).user?.username;
     return this.vendasService.listarPorUsuario(usuario);
   }
 
-  // Cálculo de frete restrito a Pro/Premium (mantido)
-  @UseGuards(AuthGuard, PlanoGuard)
-  @RequerPlano('pro')
-  @Post('calcular-frete')
-  async calcularFrete(@Req() req: Request, @Body() body: { clienteId: string }) {
-    const usuario = (req as any).user?.username;
-    return this.vendasService.calcularFrete(usuario, body.clienteId);
-  }
-
-  // Estatísticas LIBERADAS para todos os planos (removido @RequerPlano)
-  @UseGuards(AuthGuard)
   @Get('estatisticas')
   async getEstatisticas(
     @Query('dataInicio') dataInicio: string,
@@ -47,7 +41,6 @@ export class VendasController {
     return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
   }
 
-  @UseGuards(AuthGuard)
   @Get('estatisticas-clientes')
   async getEstatisticasClientes(
     @Query('dataInicio') dataInicio: string,
@@ -58,24 +51,13 @@ export class VendasController {
     return this.vendasService.getTopClientes(usuario, dataInicio, dataFim);
   }
 
-  @UseGuards(AuthGuard)
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<VendaEntity> {
+  findOne(@Param('id') id: string) {
     return this.vendasService.buscarPorId(id);
   }
 
-  @UseGuards(AuthGuard)
-  @Patch(':id')
-  atualizar(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<VendaEntity>,
-  ): Promise<VendaEntity> {
-    return this.vendasService.atualizar(id, data);
-  }
-
-  @UseGuards(AuthGuard)
   @Delete(':id')
-  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  remove(@Param('id') id: string) {
     return this.vendasService.remover(id);
   }
 }
