@@ -1,5 +1,3 @@
-// src/vendas/vendas.controller.ts
-
 import {
   Controller,
   Get,
@@ -33,7 +31,7 @@ export class VendasController {
     return this.vendasService.listarPorUsuario(usuario);
   }
 
-  // 🟢 CORREÇÃO: Rota estática 'estatisticas' declarada antes da rota dinâmica ':id'
+  // 🟢 Estatísticas gerais (vendas, produtos, etc)
   @Get('estatisticas')
   async getEstatisticas(
     @Query('dataInicio') dataInicio: string,
@@ -42,6 +40,17 @@ export class VendasController {
   ) {
     const usuario = (req as any).user?.username;
     return this.vendasService.getEstatisticas(usuario, dataInicio, dataFim);
+  }
+
+  // 🟢 Estatísticas de clientes (top clientes)
+  @Get('estatisticas-clientes')
+  async getEstatisticasClientes(
+    @Query('dataInicio') dataInicio: string,
+    @Query('dataFim') dataFim: string,
+    @Req() req: Request,
+  ) {
+    const usuario = (req as any).user?.username;
+    return this.vendasService.getTopClientes(usuario, dataInicio, dataFim);
   }
 
   @Get(':id')
