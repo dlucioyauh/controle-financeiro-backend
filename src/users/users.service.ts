@@ -102,16 +102,20 @@ export class UsersService {
   }
 
   // 🆕 Onboarding – atualizar status
-  async updateOnboardingStatus(userId: string, step: string, completed: boolean) {
-    const user = await this.findById(userId);
-    if (!user) throw new ConflictException('Usuário não encontrado');
+async updateOnboardingStatus(userId: string, step: string, completed: boolean) {
+  console.log(`📝 Atualizando onboarding: userId=${userId}, step=${step}, completed=${completed}`);
+  const user = await this.findById(userId);
+  if (!user) throw new ConflictException('Usuário não encontrado');
 
-    const currentSteps = user.onboardingSteps || {};
-    currentSteps[step] = completed;
+  const currentSteps = user.onboardingSteps || {};
+  currentSteps[step] = completed;
+  console.log('📂 Passos atuais:', currentSteps);
 
-    await this.usersRepository.update(userId, { onboardingSteps: currentSteps });
-    return { message: 'Status atualizado', steps: currentSteps };
-  }
+  await this.usersRepository.update(userId, { onboardingSteps: currentSteps });
+  const updated = await this.findById(userId);
+  console.log('✅ Usuário após atualização:', updated?.onboardingSteps);
+  return { message: 'Status atualizado', steps: currentSteps };
+}
 
   async listarUsuarios() {
     const usuarios = await this.usersRepository.find({
