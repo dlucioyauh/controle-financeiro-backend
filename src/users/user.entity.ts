@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('users')
 export class UserEntity {
@@ -23,7 +29,6 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   telefone!: string | null;
 
-  // Endereço de origem
   @Column({ type: 'varchar', nullable: true })
   enderecoOrigem!: string | null;
 
@@ -48,7 +53,6 @@ export class UserEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.80 })
   taxaFreteKm!: number;
 
-  // Dados da empresa
   @Column({ type: 'varchar', length: 18, nullable: true })
   cnpj!: string | null;
 
@@ -64,7 +68,6 @@ export class UserEntity {
   @Column({ type: 'timestamp', nullable: true })
   trialEndsAt!: Date | null;
 
-  // Stripe
   @Column({ type: 'varchar', nullable: true })
   stripeCustomerId!: string | null;
 
@@ -74,6 +77,13 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   stripeSubscriptionStatus!: string | null;
 
+  // 🆕 Coluna para onboarding
+  @Column({ type: 'jsonb', nullable: true, default: {} })
+  onboardingSteps!: Record<string, boolean>;
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }
