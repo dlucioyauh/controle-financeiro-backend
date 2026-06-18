@@ -17,6 +17,7 @@ import { HealthModule } from './health/health.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { RelatoriosAvancadosModule } from './relatorios-avancados/relatorios-avancados.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     IngredientesModule,
     ReceitasModule,
     VendasModule,
+    AdminMetricsModule,
     ClientesModule,
     MailModule,
     StripeModule,
