@@ -8,7 +8,6 @@ import { AppModule } from './app.module';
 import { SentryFilter } from './filters/sentry.filter';
 
 async function bootstrap() {
-  // Inicializa o Sentry antes de qualquer coisa
   Sentry.init({
     dsn: 'https://20605ba23be3149ba2c580ef3ee08979@o4511559401668608.ingest.us.sentry.io/4511559409598464',
     integrations: [nodeProfilingIntegration()],
@@ -18,12 +17,12 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // Configuração CORS aprimorada para aceitar previews do Vercel
+  // CORS – permite origens locais, produção e previews do Vercel
   app.enableCors({
     origin: [
       'http://localhost:5173',
       'https://controle-financeiro-frontend-two.vercel.app',
-      /\.vercel\.app$/,               // Aceita qualquer subdomínio .vercel.app
+      /\.vercel\.app$/, // aceita qualquer subdomínio do Vercel (ex: preview-xyz.vercel.app)
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
@@ -40,7 +39,6 @@ async function bootstrap() {
     }),
   );
 
-  // Filtro global do Sentry – captura toda exceção não tratada
   app.useGlobalFilters(new SentryFilter());
 
   const configService = app.get(ConfigService);
@@ -51,3 +49,4 @@ async function bootstrap() {
 }
 
 bootstrap();
+//
