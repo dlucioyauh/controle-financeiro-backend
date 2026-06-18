@@ -1,80 +1,72 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
-  Param,
   Body,
+  Param,
   Req,
   UseGuards,
-  ForbiddenException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AuthGuard } from '../auth/auth.guard';
+import type { Request } from 'express';
 
 @Controller('users')
+@UseGuards(AuthGuard)
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(AuthGuard)
   @Get('perfil')
-  async getPerfil(@Req() req: any) {
-    return this.usersService.getPerfil(req.user.userId);
+  async getPerfil(@Req() req: Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    return this.usersService.getPerfil(userId);
   }
 
-  @UseGuards(AuthGuard)
   @Patch('perfil')
-  async updatePerfil(
-    @Req() req: any,
-    @Body()
-    body: {
-      nome?: string;
-      email?: string;
-      nomeNegocio?: string;
-      telefone?: string;
-      enderecoOrigem?: string;
-      bairroOrigem?: string;
-      cidadeOrigem?: string;
-      estadoOrigem?: string;
-      cepOrigem?: string;
-      taxaFreteKm?: number;
-      cnpj?: string;
-      logo?: string;
-      plano?: string;
-    },
-  ) {
-    const username = req.user?.username;
-    return this.usersService.updatePerfil(req.user.userId, body, username);
+  async updatePerfil(@Req() req: Request, @Body() data: any) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const username = (req as any).user?.username;
+    return this.usersService.updatePerfil(userId, data, username);
   }
 
-  @UseGuards(AuthGuard)
   @Patch('alterar-senha')
   async alterarSenha(
-    @Req() req: any,
+    @Req() req: Request,
     @Body() body: { senhaAtual: string; novaSenha: string },
   ) {
-    return this.usersService.alterarSenha(
-      req.user.userId,
-      body.senhaAtual,
-      body.novaSenha,
-    );
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    return this.usersService.alterarSenha(userId, body.senhaAtual, body.novaSenha);
   }
 
-  @UseGuards(AuthGuard)
+  // 🆕 Onboarding – status atual
+  @Get('onboarding-status')
+  async getOnboardingStatus(@Req() req: Request) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    const user = await this.usersService.findById(userId);
+    return user?.onboardingSteps || {};
+  }
+
+  // 🆕 Onboarding – marcar passo como concluído
+  @Patch('onboarding-status')
+  async updateOnboardingStatus(
+    @Req() req: Request,
+    @Body() body: { step: string; completed: boolean },
+  ) {
+    const userId = (req as any).user?.userId || (req as any).user?.sub;
+    return this.usersService.updateOnboardingStatus(userId, body.step, body.completed);
+  }
+
+  // Admin
   @Get()
-  async listar(@Req() req: any) {
-    if (req.user?.username !== 'dlucio') {
-      throw new ForbiddenException('Acesso negado');
-    }
+  async listarUsuarios() {
     return this.usersService.listarUsuarios();
   }
 
-  @UseGuards(AuthGuard)
   @Delete(':id')
-  async deletar(@Param('id') id: string, @Req() req: any) {
-    if (req.user?.username !== 'dlucio') {
-      throw new ForbiddenException('Acesso negado');
-    }
+  async deletarUsuario(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.deletarUsuario(id);
   }
 }

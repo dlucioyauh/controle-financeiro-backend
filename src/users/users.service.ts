@@ -44,11 +44,12 @@ export class UsersService {
       email: data.email || null,
       nomeNegocio: data.nomeNegocio || null,
       telefone: data.telefone || null,
+      onboardingSteps: {}, // inicia vazio
     });
 
     const savedUser = await this.usersRepository.save(novoUsuario);
 
-    // Criar preferências padrão para o novo usuário
+    // Criar preferências padrão
     const prefs = this.preferencesRepository.create({ userId: savedUser.id });
     await this.preferencesRepository.save(prefs);
 
@@ -99,6 +100,22 @@ export class UsersService {
     await this.usersRepository.save(user);
     return { message: 'Senha alterada com sucesso' };
   }
+
+  // 🆕 Onboarding – atualizar status
+async updateOnboardingStatus(userId: string, step: string, completed: boolean) {
+  console.log(`📝 Atualizando onboarding: userId=${userId}, step=${step}, completed=${completed}`);
+  const user = await this.findById(userId);
+  if (!user) throw new ConflictException('Usuário não encontrado');
+
+  const currentSteps = user.onboardingSteps || {};
+  currentSteps[step] = completed;
+  console.log('📂 Passos atuais:', currentSteps);
+
+  await this.usersRepository.update(userId, { onboardingSteps: currentSteps });
+  const updated = await this.findById(userId);
+  console.log('✅ Usuário após atualização:', updated?.onboardingSteps);
+  return { message: 'Status atualizado', steps: currentSteps };
+}
 
   async listarUsuarios() {
     const usuarios = await this.usersRepository.find({
