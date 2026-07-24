@@ -4,7 +4,7 @@ import {
 import { ClientesService } from './clientes.service';
 import { Customer } from './customer.entity';
 import { AuthGuard } from '../auth/auth.guard';
-import { LimiteClientesGuard } from './limite-clientes.guard'; // ← novo guard
+import { LimiteClientesGuard } from './limite-clientes.guard';
 import type { Request } from 'express';
 
 @Controller('clientes')
@@ -12,7 +12,6 @@ import type { Request } from 'express';
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
-  // Criação de cliente limitada pelo plano
   @UseGuards(LimiteClientesGuard)
   @Post()
   criar(@Body() data: any, @Req() req: Request) {
@@ -21,9 +20,17 @@ export class ClientesController {
   }
 
   @Get()
-  listar(@Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.clientesService.listarPorUsuario(usuario);
+  async listar(@Req() req: Request) {
+    try {
+      const usuario = (req as any).user?.username;
+      console.log('📋 Listar clientes - usuário:', usuario);
+      const result = await this.clientesService.listarPorUsuario(usuario);
+      console.log('✅ Clientes encontrados:', result.length);
+      return result;
+    } catch (error) {
+      console.error('❌ Erro no controller listar:', error);
+      throw error;
+    }
   }
 
   @Get('mapa')
