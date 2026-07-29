@@ -5,7 +5,41 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { SentryFilter } from './filters/sentry.filter';
+
+// --- Filtro Global de Exceções (Para printar o erro no navegador) ---
+import { Catch, ExceptionFilter, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+
+@Catch()
+export class GlobalErrorFilter implements ExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
+
+    // 1. Imprime o erro DETALHADO no console do Railway (onde você estava procurando)
+    console.error('🔥 ERRO DETALHADO NO SERVIDOR:', exception);
+
+    // 2. Envia o erro para o Sentry
+    Sentry.captureException(exception);
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const message = exception.message || 'Erro interno do servidor';
+
+    // 3. Retorna o erro em JSON para o navegador (F12 vai mostrar exatamente o que falta)
+    response.status(status).json({
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      message: message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : exception.stack,
+    });
+  }
+}
+// ----------------------------------------------------------------
 
 async function bootstrap() {
   Sentry.init({
@@ -39,7 +73,8 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new SentryFilter());
+  // Substituindo o antigo SentryFilter pelo nosso filtro customizado
+  app.useGlobalFilters(new GlobalErrorFilter());
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3001;
@@ -49,4 +84,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-//
