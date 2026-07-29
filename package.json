@@ -5,13 +5,13 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "scripts": {
+    "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "npm run build && node dist/main",
+    "start:prod": "npm run build && find dist -name 'main.js' -exec node {} \\;",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
