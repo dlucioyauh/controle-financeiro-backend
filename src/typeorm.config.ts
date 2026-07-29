@@ -13,7 +13,8 @@ export const AppDataSource = new DataSource({
   username: configService.get('DB_USER'),
   password: configService.get('DB_PASS'),
   database: configService.get('DB_NAME'),
-  entities: ['dist/**/*.entity{.ts,.js}'],
+  // 🔥 AGORA APONTA PARA OS ARQUIVOS .TS NA PASTA SRC
+  entities: ['src/**/*.entity{.ts,.js}'],
   migrations: ['src/migrations/*{.ts,.js}'],
   synchronize: false,
 });
