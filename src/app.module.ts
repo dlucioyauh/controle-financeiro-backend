@@ -30,7 +30,9 @@ import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: false,
+      // 🔒 Segurança contra perda de dados: Apenas sincroniza localmente!
+      synchronize: process.env.NODE_ENV === 'development',
+      // Onde suas migrações estarão após o build do NestJS
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
     CacheModule.register({
