@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { Customer } from './customer.entity';
 
 @Injectable()
@@ -30,9 +30,13 @@ export class ClientesService {
     }
   }
 
+  // Método corrigido para o mapa (filtra clientes com latitude não nula)
   async listarParaMapa(usuario: string): Promise<Customer[]> {
     return this.clientesRepository.find({
-      where: { usuario, latitude: { $ne: null } as any },
+      where: {
+        usuario,
+        latitude: Not(IsNull()), // ← CORREÇÃO: usa operadores do TypeORM em vez de { $ne: null }
+      },
     });
   }
 
