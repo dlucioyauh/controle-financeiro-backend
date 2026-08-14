@@ -51,13 +51,17 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // CORS – permite origens locais, produção e previews do Vercel
+  // 🔧 CORS – lê a variável de ambiente CORS_ORIGIN ou usa fallback
+  const corsOrigin = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : [
+        'http://localhost:5173',
+        'https://controle-financeiro-frontend-two.vercel.app',
+        /\.vercel\.app$/, // aceita qualquer subdomínio do Vercel (ex: preview-xyz.vercel.app)
+      ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'https://controle-financeiro-frontend-two.vercel.app',
-      /\.vercel\.app$/, // aceita qualquer subdomínio do Vercel (ex: preview-xyz.vercel.app)
-    ],
+    origin: corsOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
