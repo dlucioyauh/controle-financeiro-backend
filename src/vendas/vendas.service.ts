@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { VendaEntity } from './venda.entity';
 import { UsersService } from '../users/users.service';
 import { ClientesService } from '../clientes/clientes.service';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class VendasService {
@@ -14,12 +15,27 @@ export class VendasService {
     private usersService: UsersService,
     private clientesService: ClientesService,
     private configService: ConfigService,
+    private whatsappService: WhatsAppService,
   ) {}
 
-  // --- CRUD ---
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
     const venda = this.vendaRepository.create(data);
-    return this.vendaRepository.save(venda);
+    const saved = await this.vendaRepository.save(venda);
+
+    // --- Envia comprovante via WhatsApp (se configurado) ---
+    try {
+      const user = await this.usersService.findOne(data.usuario || '');
+      if (user?.whatsappEnabled && user?.whatsappNumber) {
+        const targetNumber = data.clienteTelefone || user.whatsappNumber;
+        if (targetNumber) {
+          await this.whatsappService.sendSaleReceipt(targetNumber, saved);
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar comprovante WhatsApp:', error.message);
+    }
+
+    return saved;
   }
 
   async listar(): Promise<VendaEntity[]> {
@@ -41,10 +57,7 @@ export class VendasService {
     return venda;
   }
 
-  async atualizar(
-    id: string,
-    data: Partial<VendaEntity>,
-  ): Promise<VendaEntity> {
+  async atualizar(id: string, data: Partial<VendaEntity>): Promise<VendaEntity> {
     const venda = await this.buscarPorId(id);
     Object.assign(venda, data);
     return this.vendaRepository.save(venda);
