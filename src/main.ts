@@ -6,7 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
-// --- Filtro Global de Exceções (Para printar o erro no navegador) ---
+// --- Filtro Global de Exceções ---
 import { Catch, ExceptionFilter, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 
 @Catch()
@@ -16,10 +16,7 @@ export class GlobalErrorFilter implements ExceptionFilter {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
 
-    // 1. Imprime o erro DETALHADO no console do Railway (onde você estava procurando)
     console.error('🔥 ERRO DETALHADO NO SERVIDOR:', exception);
-
-    // 2. Envia o erro para o Sentry
     Sentry.captureException(exception);
 
     const status =
@@ -29,7 +26,6 @@ export class GlobalErrorFilter implements ExceptionFilter {
 
     const message = exception.message || 'Erro interno do servidor';
 
-    // 3. Retorna o erro em JSON para o navegador (F12 vai mostrar exatamente o que falta)
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
@@ -51,13 +47,13 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // 🔧 CORS – lê a variável de ambiente CORS_ORIGIN ou usa fallback
+  // 🔧 CORS dinâmico – lê a variável CORS_ORIGIN
   const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
     : [
         'http://localhost:5173',
         'https://controle-financeiro-frontend-two.vercel.app',
-        /\.vercel\.app$/, // aceita qualquer subdomínio do Vercel (ex: preview-xyz.vercel.app)
+        /\.vercel\.app$/,
       ];
 
   app.enableCors({
@@ -77,7 +73,6 @@ async function bootstrap() {
     }),
   );
 
-  // Substituindo o antigo SentryFilter pelo nosso filtro customizado
   app.useGlobalFilters(new GlobalErrorFilter());
 
   const configService = app.get(ConfigService);
