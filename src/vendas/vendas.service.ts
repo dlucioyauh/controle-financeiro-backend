@@ -37,10 +37,36 @@ export class VendasService {
       console.log('👤 Usuário:', user?.username, 'WhatsApp ativado?', user?.whatsappEnabled);
 
       if (user?.whatsappEnabled && user?.whatsappNumber) {
-        const targetNumber = data.clienteTelefone || user.whatsappNumber;
-        console.log('📱 Enviando para:', targetNumber);
-        const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved);
-        console.log('📤 Resultado do envio:', result);
+        let targetNumber: string | null = null;
+
+        // 🔍 Prioridade 1: se a venda tem clienteId, busca o telefone do cliente
+        if (data.clienteId) {
+          try {
+            const cliente = await this.clientesService.buscarPorId(data.clienteId);
+            if (cliente?.telefone) {
+              targetNumber = cliente.telefone;
+              console.log('📱 Telefone do cliente encontrado:', targetNumber);
+            } else {
+              console.log('⚠️ Cliente não possui telefone cadastrado.');
+            }
+          } catch (err) {
+            console.log('⚠️ Cliente não encontrado com o ID fornecido.');
+          }
+        }
+
+        // 🔽 Fallback: se não encontrou telefone do cliente, usa o número do usuário
+        if (!targetNumber) {
+          targetNumber = user.whatsappNumber;
+          console.log('📱 Usando telefone do usuário (fallback):', targetNumber);
+        }
+
+        if (targetNumber) {
+          console.log('📤 Enviando comprovante para:', targetNumber);
+          const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved);
+          console.log('📤 Resultado do envio:', result);
+        } else {
+          console.log('⚠️ Nenhum número de telefone disponível para envio.');
+        }
       } else {
         console.log('⚠️ WhatsApp não ativado para este usuário ou número não configurado.');
       }
