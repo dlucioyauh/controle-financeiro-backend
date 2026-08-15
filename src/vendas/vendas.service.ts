@@ -20,6 +20,7 @@ export class VendasService {
 
   // --- CRUD ---
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
+    console.log('🚀 MÉTODO CRIAR FOI CHAMADO');
     console.log('📝 Criando venda com dados:', data);
 
     // Calcula precoUnitario se valorTotal e quantidade existirem
@@ -34,6 +35,7 @@ export class VendasService {
     // --- Envia comprovante via WhatsApp (se configurado) ---
     try {
       const user = await this.usersService.findOne(data.usuario || '');
+      console.log('📱 TENTANDO ENVIAR WHATSAPP...');
       console.log('👤 Usuário:', user?.username, 'WhatsApp ativado?', user?.whatsappEnabled);
 
       if (user?.whatsappEnabled && user?.whatsappNumber) {
