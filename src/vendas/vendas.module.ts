@@ -5,14 +5,16 @@ import { VendasService } from './vendas.service';
 import { VendaEntity } from './venda.entity';
 import { ClientesModule } from '../clientes/clientes.module';
 import { UsersModule } from '../users/users.module';
-import { AuthModule } from '../auth/auth.module'; // ← adicionar
+import { WhatsAppModule } from '../whatsapp/whatsapp.module';
+import { AuthModule } from '../auth/auth.module'; // ← Importar AuthModule
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([VendaEntity]),
     ClientesModule,
     UsersModule,
-    AuthModule, // ← necessário para o AuthGuard
+    WhatsAppModule,
+    AuthModule, // ← Necessário para o AuthGuard
   ],
   controllers: [VendasController],
   providers: [VendasService],

@@ -5,7 +5,37 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { SentryFilter } from './filters/sentry.filter';
+
+// --- Filtro Global de Exceções ---
+import { Catch, ExceptionFilter, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+
+@Catch()
+export class GlobalErrorFilter implements ExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
+
+    console.error('🔥 ERRO DETALHADO NO SERVIDOR:', exception);
+    Sentry.captureException(exception);
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const message = exception.message || 'Erro interno do servidor';
+
+    response.status(status).json({
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      message: message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : exception.stack,
+    });
+  }
+}
+// ----------------------------------------------------------------
 
 async function bootstrap() {
   Sentry.init({
@@ -17,13 +47,17 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // CORS – permite origens locais, produção e previews do Vercel
+  // 🔧 CORS dinâmico – lê a variável CORS_ORIGIN
+  const corsOrigin = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : [
+        'http://localhost:5173',
+        'https://controle-financeiro-frontend-two.vercel.app',
+        /\.vercel\.app$/,
+      ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'https://controle-financeiro-frontend-two.vercel.app',
-      /\.vercel\.app$/, // aceita qualquer subdomínio do Vercel (ex: preview-xyz.vercel.app)
-    ],
+    origin: corsOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
@@ -39,7 +73,7 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new SentryFilter());
+  app.useGlobalFilters(new GlobalErrorFilter());
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3001;
@@ -49,4 +83,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-//

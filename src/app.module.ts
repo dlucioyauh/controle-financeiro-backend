@@ -18,6 +18,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { RelatoriosAvancadosModule } from './relatorios-avancados/relatorios-avancados.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -30,12 +31,12 @@ import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: process.env.NODE_ENV === 'development',
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
     CacheModule.register({
-      ttl: 300, // segundos (5 minutos)
-      max: 100, // número máximo de itens em cache
+      ttl: 300,
+      max: 100,
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     DespesasModule,
@@ -52,6 +53,7 @@ import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
     FeatureFlagsModule,
     RelatoriosAvancadosModule,
     NotificationsModule,
+    WhatsAppModule,
   ],
   providers: [
     {

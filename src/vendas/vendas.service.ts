@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { VendaEntity } from './venda.entity';
 import { UsersService } from '../users/users.service';
 import { ClientesService } from '../clientes/clientes.service';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class VendasService {
@@ -14,12 +15,70 @@ export class VendasService {
     private usersService: UsersService,
     private clientesService: ClientesService,
     private configService: ConfigService,
+    private whatsappService: WhatsAppService,
   ) {}
 
   // --- CRUD ---
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
+    console.log('📝 Criando venda com dados:', data);
+
+    // Calcula precoUnitario se valorTotal e quantidade existirem
+    if (data.valorTotal && data.quantidade) {
+      data.precoUnitario = Number(data.valorTotal) / Number(data.quantidade);
+    }
+
     const venda = this.vendaRepository.create(data);
-    return this.vendaRepository.save(venda);
+    const saved = await this.vendaRepository.save(venda);
+    console.log('✅ Venda salva, ID:', saved.id);
+
+    // --- Envia comprovante via WhatsApp (se configurado) ---
+    try {
+      const user = await this.usersService.findOne(data.usuario || '');
+      console.log('👤 Usuário:', user?.username, 'WhatsApp ativado?', user?.whatsappEnabled);
+
+      if (user?.whatsappEnabled && user?.whatsappNumber) {
+        let targetNumber: string | null = null;
+
+        // 🔍 Prioridade 1: se a venda tem clienteId, busca o telefone do cliente
+        if (data.clienteId) {
+          try {
+            const cliente = await this.clientesService.buscarPorId(data.clienteId);
+            if (cliente?.telefone) {
+              targetNumber = cliente.telefone;
+              console.log('📱 Telefone do cliente encontrado:', targetNumber);
+            } else {
+              console.log('⚠️ Cliente não possui telefone cadastrado.');
+            }
+          } catch (err) {
+            console.log('⚠️ Cliente não encontrado com o ID fornecido.');
+          }
+        }
+
+        // 🔽 Fallback: se não encontrou telefone do cliente, usa o número do usuário
+        if (!targetNumber) {
+          targetNumber = user.whatsappNumber;
+          console.log('📱 Usando telefone do usuário (fallback):', targetNumber);
+        }
+
+        if (targetNumber) {
+          console.log('📤 Enviando comprovante para:', targetNumber);
+          const userData = {
+            nomeNegocio: user?.nomeNegocio || undefined,
+            cnpj: user?.cnpj || undefined,
+          };
+          const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved, userData);
+          console.log('📤 Resultado do envio:', result);
+        } else {
+          console.log('⚠️ Nenhum número de telefone disponível para envio.');
+        }
+      } else {
+        console.log('⚠️ WhatsApp não ativado para este usuário ou número não configurado.');
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar comprovante WhatsApp:', error.message);
+    }
+
+    return saved;
   }
 
   async listar(): Promise<VendaEntity[]> {
@@ -41,10 +100,7 @@ export class VendasService {
     return venda;
   }
 
-  async atualizar(
-    id: string,
-    data: Partial<VendaEntity>,
-  ): Promise<VendaEntity> {
+  async atualizar(id: string, data: Partial<VendaEntity>): Promise<VendaEntity> {
     const venda = await this.buscarPorId(id);
     Object.assign(venda, data);
     return this.vendaRepository.save(venda);

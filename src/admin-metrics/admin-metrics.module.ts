@@ -6,10 +6,7 @@ import { UserEntity } from '../users/user.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserEntity]),
-    AuthModule, // ← fornece JwtService e AuthGuard
-  ],
+  imports: [TypeOrmModule.forFeature([UserEntity]), AuthModule],
   controllers: [AdminMetricsController],
   providers: [AdminMetricsService],
 })

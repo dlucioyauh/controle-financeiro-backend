@@ -29,6 +29,14 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   telefone!: string | null;
 
+  // WhatsApp
+  @Column({ type: 'varchar', nullable: true })
+  whatsappNumber!: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  whatsappEnabled!: boolean;
+
+  // Endereço de origem
   @Column({ type: 'varchar', nullable: true })
   enderecoOrigem!: string | null;
 
@@ -77,7 +85,6 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   stripeSubscriptionStatus!: string | null;
 
-  // 🆕 Coluna para onboarding
   @Column({ type: 'jsonb', nullable: true, default: {} })
   onboardingSteps!: Record<string, boolean>;
 

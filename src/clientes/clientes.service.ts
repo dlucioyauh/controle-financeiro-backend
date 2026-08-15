@@ -1,45 +1,63 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { Customer } from './customer.entity';
+
 @Injectable()
 export class ClientesService {
   constructor(
     @InjectRepository(Customer)
-    private customerRepository: Repository<Customer>,
+    private clientesRepository: Repository<Customer>,
   ) {}
+
   async criar(data: Partial<Customer>): Promise<Customer> {
-    const customer = this.customerRepository.create(data);
-    return this.customerRepository.save(customer);
+    const cliente = this.clientesRepository.create(data);
+    return this.clientesRepository.save(cliente);
   }
-  async listar(): Promise<Customer[]> {
-    return this.customerRepository.find({ order: { nome: 'ASC' } });
-  }
+
   async listarPorUsuario(usuario: string): Promise<Customer[]> {
-    return this.customerRepository.find({
-      where: { usuario },
-      order: { nome: 'ASC' },
-    });
+    try {
+      console.log('🔍 Buscando clientes para usuário:', usuario);
+      const result = await this.clientesRepository.find({
+        where: { usuario },
+        order: { createdAt: 'DESC' },
+      });
+      console.log('📦 Resultado da query:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Erro no service listarPorUsuario:', error);
+      throw error;
+    }
   }
+
+  // Método corrigido para o mapa (filtra clientes com latitude não nula)
   async listarParaMapa(usuario: string): Promise<Customer[]> {
-    return this.customerRepository.find({
-      where: { usuario },
-      select: ['id', 'nome', 'latitude', 'longitude', 'endereco', 'bairro', 'cidade'],
-      order: { nome: 'ASC' },
+    return this.clientesRepository.find({
+      where: {
+        usuario,
+        latitude: Not(IsNull()), // ← CORREÇÃO: usa operadores do TypeORM em vez de { $ne: null }
+      },
     });
   }
+
   async buscarPorId(id: string): Promise<Customer> {
-    const customer = await this.customerRepository.findOne({ where: { id } });
-    if (!customer) throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
-    return customer;
+    const cliente = await this.clientesRepository.findOne({ where: { id } });
+    if (!cliente) {
+      throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+    }
+    return cliente;
   }
+
   async atualizar(id: string, data: Partial<Customer>): Promise<Customer> {
-    const customer = await this.buscarPorId(id);
-    Object.assign(customer, data);
-    return this.customerRepository.save(customer);
+    const cliente = await this.buscarPorId(id);
+    Object.assign(cliente, data);
+    return this.clientesRepository.save(cliente);
   }
+
   async remover(id: string): Promise<void> {
-    const resultado = await this.customerRepository.delete(id);
-    if (resultado.affected === 0) throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+    const result = await this.clientesRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+    }
   }
 }
