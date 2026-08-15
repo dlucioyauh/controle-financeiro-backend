@@ -20,10 +20,26 @@ export class VendasService {
     private whatsappService: WhatsAppService,
   ) {}
 
-  // --- CRUD ---
+  // --------------------------------------------------------------
+  // CRUD
+  // --------------------------------------------------------------
+
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
     this.logger.log('🚀 MÉTODO CRIAR FOI CHAMADO');
     this.logger.log(`📝 Dados recebidos: ${JSON.stringify(data)}`);
+
+    // Se houver clienteId e não tiver clienteNome, busca o nome do cliente
+    if (data.clienteId && !data.clienteNome) {
+      try {
+        const cliente = await this.clientesService.buscarPorId(data.clienteId);
+        if (cliente) {
+          data.clienteNome = cliente.nome;
+          this.logger.log(`👥 Nome do cliente definido: ${cliente.nome}`);
+        }
+      } catch (err) {
+        this.logger.warn('⚠️ Cliente não encontrado ao buscar nome.');
+      }
+    }
 
     // Calcula preço unitário se necessário
     if (data.valorTotal && data.quantidade) {
@@ -34,7 +50,7 @@ export class VendasService {
     const saved = await this.vendaRepository.save(venda);
     this.logger.log(`✅ Venda salva com ID: ${saved.id}`);
 
-    // Dispara notificação em background (não bloqueia a resposta)
+    // Dispara notificação em background (não bloqueia a resposta HTTP)
     this.notificarVenda(saved, data).catch((err) => {
       this.logger.error(
         `❌ Erro inesperado na notificação WhatsApp: ${err.message}`,
@@ -82,22 +98,18 @@ export class VendasService {
         return;
       }
 
-      // 2. Busca o cliente (se houver)
+      // 2. Busca o cliente (se houver) e tenta obter telefone
       let clienteTelefone: string | null = null;
       if (data.clienteId) {
         this.logger.log(`🔍 Buscando cliente ID: ${data.clienteId}`);
         try {
           const cliente = await this.clientesService.buscarPorId(data.clienteId);
           if (cliente) {
-            const clienteAny = cliente as any; // acesso flexível
+            // Acessa somente a propriedade 'telefone' (existente no banco)
+            clienteTelefone = (cliente as any)?.telefone || null;
             this.logger.log(
-              `📦 Cliente encontrado: ${clienteAny.nome} | telefone=${clienteAny.telefone} | clienteTelefone=${clienteAny.clienteTelefone}`,
+              `📦 Cliente encontrado: ${cliente.nome} | telefone=${clienteTelefone}`,
             );
-            // Verifica as duas possíveis colunas de telefone
-            clienteTelefone =
-              clienteAny?.telefone ||
-              clienteAny?.clienteTelefone ||
-              null;
           }
         } catch (err) {
           this.logger.warn(
@@ -145,7 +157,10 @@ export class VendasService {
     }
   }
 
-  // --- LISTAGEM ---
+  // --------------------------------------------------------------
+  // LISTAGEM
+  // --------------------------------------------------------------
+
   async listar(): Promise<VendaEntity[]> {
     return this.vendaRepository.find({ order: { dataVenda: 'DESC' } });
   }
@@ -181,7 +196,10 @@ export class VendasService {
     }
   }
 
-  // --- ESTATÍSTICAS ---
+  // --------------------------------------------------------------
+  // ESTATÍSTICAS
+  // --------------------------------------------------------------
+
   async getEstatisticas(usuario: string, dataInicio: string, dataFim: string) {
     this.logger.log(
       `📊 Estatísticas solicitadas para ${usuario} de ${dataInicio} até ${dataFim}`,
@@ -268,7 +286,10 @@ export class VendasService {
     }));
   }
 
-  // --- FRETE ---
+  // --------------------------------------------------------------
+  // FRETE
+  // --------------------------------------------------------------
+
   async calcularFrete(usuario: string, clienteId: string) {
     const user = await this.usersService.findOne(usuario);
     if (!user) throw new NotFoundException('Usuário não encontrado');

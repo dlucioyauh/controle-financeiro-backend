@@ -9,7 +9,8 @@ export class WhatsAppService {
   private readonly instance: string;
 
   constructor() {
-    this.apiUrl = process.env.WHATSAPP_API_URL || '';
+    // Remove barras finais da URL para evitar double slash
+    this.apiUrl = (process.env.WHATSAPP_API_URL || '').replace(/\/+$/, '');
     this.apiKey = process.env.WHATSAPP_API_KEY || '';
     this.instance = process.env.WHATSAPP_INSTANCE || '';
 
@@ -24,22 +25,15 @@ export class WhatsAppService {
     }
   }
 
-  /**
-   * Normaliza o número para o formato internacional brasileiro.
-   * Ex: 48996126202 -> 5548996126202
-   */
   private normalizePhoneNumber(phone: string): string {
     if (!phone) return '';
 
     let cleaned = phone.replace(/\D/g, '');
     if (cleaned.startsWith('55')) return cleaned;
     if (cleaned.length >= 10 && cleaned.length <= 11) return `55${cleaned}`;
-    return cleaned; // já pode estar no formato internacional
+    return cleaned;
   }
 
-  /**
-   * Envia mensagem de texto simples.
-   */
   async sendMessage(to: string, message: string): Promise<boolean> {
     this.logger.log(`📤 Enviando mensagem para ${to}`);
 
@@ -59,6 +53,7 @@ export class WhatsAppService {
       return false;
     }
 
+    // Constrói a URL corretamente (sem barra dupla)
     const url = `${this.apiUrl}/message/sendText/${this.instance}`;
     const payload = { number: phone, text: message };
 
@@ -95,9 +90,6 @@ export class WhatsAppService {
     }
   }
 
-  /**
-   * Envia comprovante de venda no formato padrão.
-   */
   async sendSaleReceipt(
     to: string,
     saleData: any,
