@@ -23,6 +23,9 @@ export class VendaEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 1 })
   quantidade!: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  precoUnitario!: number | null; // ← NOVO
+
   @Column({ type: 'varchar', nullable: true })
   canalVenda!: string | null;
 
@@ -30,7 +33,7 @@ export class VendaEntity {
   clienteNome!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  clienteTelefone!: string | null; // ← NOVO
+  clienteTelefone!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   clienteId!: string | null;

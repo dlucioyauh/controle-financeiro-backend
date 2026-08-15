@@ -18,18 +18,31 @@ export class VendasService {
     private whatsappService: WhatsAppService,
   ) {}
 
+  // --- CRUD ---
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
+    console.log('📝 Criando venda com dados:', data);
+
+    // Calcula precoUnitario se valorTotal e quantidade existirem
+    if (data.valorTotal && data.quantidade) {
+      data.precoUnitario = Number(data.valorTotal) / Number(data.quantidade);
+    }
+
     const venda = this.vendaRepository.create(data);
     const saved = await this.vendaRepository.save(venda);
+    console.log('✅ Venda salva, ID:', saved.id);
 
     // --- Envia comprovante via WhatsApp (se configurado) ---
     try {
       const user = await this.usersService.findOne(data.usuario || '');
+      console.log('👤 Usuário:', user?.username, 'WhatsApp ativado?', user?.whatsappEnabled);
+
       if (user?.whatsappEnabled && user?.whatsappNumber) {
         const targetNumber = data.clienteTelefone || user.whatsappNumber;
-        if (targetNumber) {
-          await this.whatsappService.sendSaleReceipt(targetNumber, saved);
-        }
+        console.log('📱 Enviando para:', targetNumber);
+        const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved);
+        console.log('📤 Resultado do envio:', result);
+      } else {
+        console.log('⚠️ WhatsApp não ativado para este usuário ou número não configurado.');
       }
     } catch (error: any) {
       console.error('❌ Erro ao enviar comprovante WhatsApp:', error.message);
