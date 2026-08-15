@@ -20,6 +20,7 @@ export class VendasService {
 
   // --- CRUD ---
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
+    console.log('🔍 Verificando clienteId:', data.clienteId);
     console.log('🚀 MÉTODO CRIAR FOI CHAMADO');
     console.log('📝 Criando venda com dados:', data);
 
