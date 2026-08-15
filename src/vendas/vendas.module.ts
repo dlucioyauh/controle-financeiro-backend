@@ -6,7 +6,7 @@ import { VendaEntity } from './venda.entity';
 import { ClientesModule } from '../clientes/clientes.module';
 import { UsersModule } from '../users/users.module';
 import { WhatsAppModule } from '../whatsapp/whatsapp.module';
-import { AuthModule } from '../auth/auth.module'; // ← Importar AuthModule
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { AuthModule } from '../auth/auth.module'; // ← Importar AuthModule
     ClientesModule,
     UsersModule,
     WhatsAppModule,
-    AuthModule, // ← Necessário para o AuthGuard
+    AuthModule,
   ],
   controllers: [VendasController],
   providers: [VendasService],

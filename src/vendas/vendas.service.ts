@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +9,8 @@ import { WhatsAppService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class VendasService {
+  private readonly logger = new Logger(VendasService.name);
+
   constructor(
     @InjectRepository(VendaEntity)
     private vendaRepository: Repository<VendaEntity>,
@@ -20,71 +22,130 @@ export class VendasService {
 
   // --- CRUD ---
   async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
-    console.log('🚀 MÉTODO CRIAR FOI CHAMADO');
-    console.log('📝 Criando venda com dados:', data);
+    this.logger.log('🚀 MÉTODO CRIAR FOI CHAMADO');
+    this.logger.log(`📝 Dados recebidos: ${JSON.stringify(data)}`);
 
-    // Calcula precoUnitario se valorTotal e quantidade existirem
+    // Calcula preço unitário se necessário
     if (data.valorTotal && data.quantidade) {
       data.precoUnitario = Number(data.valorTotal) / Number(data.quantidade);
     }
 
     const venda = this.vendaRepository.create(data);
     const saved = await this.vendaRepository.save(venda);
-    console.log('✅ Venda salva, ID:', saved.id);
+    this.logger.log(`✅ Venda salva com ID: ${saved.id}`);
 
-    // --- Envia comprovante via WhatsApp (se configurado) ---
-    try {
-      const user = await this.usersService.findOne(data.usuario || '');
-      console.log('📱 TENTANDO ENVIAR WHATSAPP...');
-      console.log('👤 Usuário:', user?.username, 'WhatsApp ativado?', user?.whatsappEnabled);
-
-      if (user?.whatsappEnabled && user?.whatsappNumber) {
-        let targetNumber: string | null = null;
-
-        // 🔍 Prioridade 1: se a venda tem clienteId, busca o telefone do cliente
-        if (data.clienteId) {
-          console.log('🔍 Buscando cliente com ID:', data.clienteId);
-          try {
-            const cliente = await this.clientesService.buscarPorId(data.clienteId);
-            console.log('📦 Cliente encontrado:', cliente);
-            if (cliente?.telefone) {
-              targetNumber = cliente.telefone;
-              console.log('📱 Telefone do cliente encontrado:', targetNumber);
-            } else {
-              console.log('⚠️ Cliente não possui telefone cadastrado.');
-            }
-          } catch (err) {
-            console.log('⚠️ Cliente não encontrado com o ID fornecido.');
-          }
-        }
-
-        // 🔽 Fallback: se não encontrou telefone do cliente, usa o número do usuário
-        if (!targetNumber) {
-          targetNumber = user.whatsappNumber;
-          console.log('📱 Usando telefone do usuário (fallback):', targetNumber);
-        }
-
-        if (targetNumber) {
-          console.log('📤 Enviando comprovante para:', targetNumber);
-          const userData = {
-            nomeNegocio: user?.nomeNegocio || undefined,
-            cnpj: user?.cnpj || undefined,
-          };
-          const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved, userData);
-          console.log('📤 Resultado do envio:', result);
-        } else {
-          console.log('⚠️ Nenhum número de telefone disponível para envio.');
-        }
-      } else {
-        console.log('⚠️ WhatsApp não ativado para este usuário ou número não configurado.');
-      }
-    } catch (error: any) {
-      console.error('❌ Erro ao enviar comprovante WhatsApp:', error.message);
-    }
+    // Dispara notificação em background (não bloqueia a resposta)
+    this.notificarVenda(saved, data).catch((err) => {
+      this.logger.error(
+        `❌ Erro inesperado na notificação WhatsApp: ${err.message}`,
+        err.stack,
+      );
+    });
 
     return saved;
   }
 
+  /**
+   * Fluxo de notificação WhatsApp com prioridade:
+   * 1. Cliente com telefone (se houver clienteId e telefone no cadastro)
+   * 2. Usuário logado (fallback)
+   * Só envia se o usuário tiver whatsappEnabled = true.
+   */
+  private async notificarVenda(
+    venda: VendaEntity,
+    data: Partial<VendaEntity>,
+  ): Promise<void> {
+    this.logger.log('📱 TENTANDO ENVIAR WHATSAPP...');
+
+    try {
+      // 1. Busca o usuário
+      const username = data.usuario || '';
+      if (!username) {
+        this.logger.warn('⚠️ Nenhum usuário informado na venda.');
+        return;
+      }
+
+      const user = await this.usersService.findOne(username);
+      if (!user) {
+        this.logger.warn(`⚠️ Usuário ${username} não encontrado.`);
+        return;
+      }
+
+      this.logger.log(
+        `👤 Usuário: ${user.username} | whatsappEnabled=${user.whatsappEnabled} | whatsappNumber=${user.whatsappNumber}`,
+      );
+
+      if (!user.whatsappEnabled) {
+        this.logger.warn(
+          `⚠️ WhatsApp desabilitado para o usuário ${user.username}. Nenhuma mensagem será enviada.`,
+        );
+        return;
+      }
+
+      // 2. Busca o cliente (se houver)
+      let clienteTelefone: string | null = null;
+      if (data.clienteId) {
+        this.logger.log(`🔍 Buscando cliente ID: ${data.clienteId}`);
+        try {
+          const cliente = await this.clientesService.buscarPorId(data.clienteId);
+          if (cliente) {
+            const clienteAny = cliente as any; // acesso flexível
+            this.logger.log(
+              `📦 Cliente encontrado: ${clienteAny.nome} | telefone=${clienteAny.telefone} | clienteTelefone=${clienteAny.clienteTelefone}`,
+            );
+            // Verifica as duas possíveis colunas de telefone
+            clienteTelefone =
+              clienteAny?.telefone ||
+              clienteAny?.clienteTelefone ||
+              null;
+          }
+        } catch (err) {
+          this.logger.warn(
+            `⚠️ Cliente ID ${data.clienteId} não encontrado. Continuando sem telefone do cliente.`,
+          );
+        }
+      }
+
+      // 3. Define destinatário (cliente > usuário)
+      let targetNumber = clienteTelefone;
+      const userData = {
+        nomeNegocio: (user as any)?.nomeNegocio || undefined,
+        cnpj: (user as any)?.cnpj || undefined,
+      };
+
+      if (targetNumber) {
+        this.logger.log(`🎯 Destino: cliente (${targetNumber})`);
+      } else {
+        targetNumber = user.whatsappNumber;
+        if (targetNumber) {
+          this.logger.log(
+            `🎯 Destino: fallback para usuário ${user.username} (${targetNumber})`,
+          );
+        } else {
+          this.logger.warn(
+            '⚠️ Nenhum número de telefone disponível (nem cliente nem usuário).',
+          );
+          return;
+        }
+      }
+
+      // 4. Envia o comprovante
+      this.logger.log(`📤 Enviando comprovante para ${targetNumber}`);
+      const result = await this.whatsappService.sendSaleReceipt(
+        targetNumber,
+        venda,
+        userData,
+      );
+      this.logger.log(`📤 Resultado do envio: ${result}`);
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Erro no fluxo de notificação: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  // --- LISTAGEM ---
   async listar(): Promise<VendaEntity[]> {
     return this.vendaRepository.find({ order: { dataVenda: 'DESC' } });
   }
@@ -104,7 +165,10 @@ export class VendasService {
     return venda;
   }
 
-  async atualizar(id: string, data: Partial<VendaEntity>): Promise<VendaEntity> {
+  async atualizar(
+    id: string,
+    data: Partial<VendaEntity>,
+  ): Promise<VendaEntity> {
     const venda = await this.buscarPorId(id);
     Object.assign(venda, data);
     return this.vendaRepository.save(venda);
@@ -119,10 +183,9 @@ export class VendasService {
 
   // --- ESTATÍSTICAS ---
   async getEstatisticas(usuario: string, dataInicio: string, dataFim: string) {
-    console.log('### getEstatisticas chamado ###');
-    console.log('usuario:', usuario);
-    console.log('dataInicio:', dataInicio);
-    console.log('dataFim:', dataFim);
+    this.logger.log(
+      `📊 Estatísticas solicitadas para ${usuario} de ${dataInicio} até ${dataFim}`,
+    );
 
     const vendas = await this.vendaRepository
       .createQueryBuilder('v')
@@ -133,13 +196,17 @@ export class VendasService {
       })
       .getMany();
 
-    console.log('vendas encontradas:', vendas.length);
-
-    const totalReceita = vendas.reduce((sum, v) => sum + Number(v.valorTotal), 0);
+    const totalReceita = vendas.reduce(
+      (sum, v) => sum + Number(v.valorTotal),
+      0,
+    );
     const totalVendas = vendas.length;
     const ticketMedio = totalVendas > 0 ? totalReceita / totalVendas : 0;
 
-    const produtosMap: Record<string, { nome: string; quantidade: number; receita: number }> = {};
+    const produtosMap: Record<
+      string,
+      { nome: string; quantidade: number; receita: number }
+    > = {};
     vendas.forEach((v) => {
       const nome = v.produto;
       if (!produtosMap[nome]) {
@@ -174,7 +241,11 @@ export class VendasService {
     };
   }
 
-  async getTopClientes(usuario: string, dataInicio: string, dataFim: string) {
+  async getTopClientes(
+    usuario: string,
+    dataInicio: string,
+    dataFim: string,
+  ) {
     const qb = this.vendaRepository
       .createQueryBuilder('v')
       .select('v.clienteNome', 'nome')
@@ -203,14 +274,18 @@ export class VendasService {
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
     if (!user.latitudeOrigem || !user.longitudeOrigem) {
-      throw new NotFoundException('Endereço de origem não configurado. Configure nas Configurações.');
+      throw new NotFoundException(
+        'Endereço de origem não configurado. Configure nas Configurações.',
+      );
     }
 
     const cliente = await this.clientesService.buscarPorId(clienteId);
     if (!cliente) throw new NotFoundException('Cliente não encontrado');
 
     if (!cliente.latitude || !cliente.longitude) {
-      throw new NotFoundException('Endereço do cliente não possui coordenadas.');
+      throw new NotFoundException(
+        'Endereço do cliente não possui coordenadas.',
+      );
     }
 
     const apiKey = this.configService.get('ORS_API_KEY');
@@ -225,7 +300,7 @@ export class VendasService {
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': apiKey,
+        Authorization: apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
