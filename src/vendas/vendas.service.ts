@@ -62,7 +62,11 @@ export class VendasService {
 
         if (targetNumber) {
           console.log('📤 Enviando comprovante para:', targetNumber);
-          const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved);
+          const userData = {
+            nomeNegocio: user?.nomeNegocio || undefined,
+            cnpj: user?.cnpj || undefined,
+          };
+          const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved, userData);
           console.log('📤 Resultado do envio:', result);
         } else {
           console.log('⚠️ Nenhum número de telefone disponível para envio.');
