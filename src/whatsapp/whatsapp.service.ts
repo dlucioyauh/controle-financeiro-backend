@@ -14,15 +14,33 @@ export class WhatsAppService {
     this.instance = this.configService.get('WHATSAPP_INSTANCE') || '';
   }
 
+  private normalizePhoneNumber(phone: string): string {
+    // Remove caracteres não numéricos
+    let cleaned = phone.replace(/\D/g, '');
+
+    // Se começar com '55', já está no formato internacional
+    if (cleaned.startsWith('55')) {
+      return cleaned;
+    }
+
+    // Se tiver 10 ou 11 dígitos (DDD + número), adiciona o código do Brasil
+    if (cleaned.length >= 10 && cleaned.length <= 11) {
+      return `55${cleaned}`;
+    }
+
+    // Fallback: retorna como está
+    return phone;
+  }
+
   async sendMessage(to: string, message: string): Promise<boolean> {
     if (!this.apiUrl || !this.apiKey || !this.instance) {
       this.logger.error('WhatsApp não configurado. Verifique as variáveis de ambiente.');
       return false;
     }
 
-    const phone = to.replace(/\D/g, '');
-    if (!phone || phone.length < 10) {
-      this.logger.error(`Número inválido: ${to}`);
+    const phone = this.normalizePhoneNumber(to);
+    if (!phone || phone.length < 12) {
+      this.logger.error(`Número inválido após normalização: ${to} -> ${phone}`);
       return false;
     }
 
