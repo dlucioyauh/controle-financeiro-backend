@@ -1,6 +1,5 @@
 import { Controller, Post, Req, Headers } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import type { Request } from 'express';
 
 @Controller('stripe')
 export class StripeWebhookController {
@@ -8,15 +7,11 @@ export class StripeWebhookController {
 
   @Post('webhook')
   async handleWebhook(
-    @Req() req: Request,
     @Headers('stripe-signature') signature: string,
+    @Req() req: any, // use any para evitar problema de tipagem
   ) {
-    // O middleware raw já transformou req.body em um Buffer
-    const rawBody = req.body;
-    if (!rawBody || !signature) {
-      return { received: false };
-    }
-    await this.stripeService.handleWebhookEvent(rawBody, signature);
+    const payload = req.rawBody as Buffer;
+    await this.stripeService.handleWebhookEvent(payload, signature);
     return { received: true };
   }
 }
