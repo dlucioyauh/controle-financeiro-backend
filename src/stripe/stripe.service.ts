@@ -5,7 +5,7 @@ import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class StripeService {
-  private stripe: any;
+  private stripe: any; // ← mudança aqui: use any
 
   constructor(
     private configService: ConfigService,
@@ -13,7 +13,9 @@ export class StripeService {
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) throw new Error('STRIPE_SECRET_KEY não configurado');
-    this.stripe = new Stripe(secretKey, {});
+    this.stripe = new Stripe(secretKey, {
+      apiVersion: '2026-05-27.dahlia', // versão exata do seu Stripe
+    });
   }
 
   async createCheckoutSession(
@@ -49,35 +51,71 @@ export class StripeService {
     return session.url;
   }
 
+  async createSetupCheckoutSession(
+    userId: string,
+    priceId: string,
+    successUrl: string,
+    cancelUrl: string,
+  ) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new Error('Usuário não encontrado');
+
+    let customerId = user.stripeCustomerId;
+    if (!customerId) {
+      const customer = await this.stripe.customers.create({
+        email: user.email || undefined,
+        name: user.nome || user.username,
+      });
+      customerId = customer.id;
+      await this.usersService.updatePerfil(userId, {
+        stripeCustomerId: customerId,
+      } as any);
+    }
+
+    const session = await this.stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'payment',
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: { type: 'setup', userId },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    });
+
+    return session.url;
+  }
+
   async handleWebhookEvent(payload: Buffer, signature: string) {
     const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
-    console.log('🔑 Webhook Secret exists:', !!webhookSecret);
     if (!webhookSecret) throw new Error('STRIPE_WEBHOOK_SECRET não configurado');
 
     let event: any;
     try {
-      event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-      console.log('✅ Evento verificado:', event.type);
+      event = this.stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        webhookSecret,
+      );
     } catch (err: any) {
-      console.error('❌ Erro na verificação do webhook:', err.message);
       throw new Error(`Webhook signature verification failed: ${err.message}`);
     }
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
+      const metadata = session.metadata || {};
+
+      if (metadata.type === 'setup' && metadata.userId) {
+        await this.usersService.updatePerfil(metadata.userId, {
+          setupPaid: true,
+        } as any);
+        console.log(`✅ Setup pago para usuário ${metadata.userId}`);
+        return;
+      }
+
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
-      const priceId = session.metadata?.priceId;
+      const priceId = metadata.priceId || '';
 
-      console.log('📦 Dados da sessão:', { customerId, subscriptionId, priceId });
-
-      const basic = this.configService.get<string>('STRIPE_PRICE_BASIC');
-      const pro = this.configService.get<string>('STRIPE_PRICE_PRO');
-      const premium = this.configService.get<string>('STRIPE_PRICE_PREMIUM');
-      console.log('📋 Variáveis de ambiente:', { basic, pro, premium });
-
-      const plano = this.getPlanFromPriceId(priceId || '');
-      console.log('🎯 Plano mapeado:', plano);
+      const plano = this.getPlanFromPriceId(priceId);
 
       await this.usersService.updateByStripeCustomer(customerId, {
         stripeSubscriptionId: subscriptionId,
@@ -87,8 +125,13 @@ export class StripeService {
     } else if (event.type === 'customer.subscription.updated') {
       const subscription = event.data.object;
       const customerId = subscription.customer as string;
-      const updateData: any = { stripeSubscriptionStatus: subscription.status };
-      if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+      const updateData: any = {
+        stripeSubscriptionStatus: subscription.status,
+      };
+      if (
+        subscription.status === 'canceled' ||
+        subscription.status === 'unpaid'
+      ) {
         updateData.plano = 'free';
       }
       await this.usersService.updateByStripeCustomer(customerId, updateData);
@@ -101,11 +144,7 @@ export class StripeService {
       [this.configService.get<string>('STRIPE_PRICE_PRO') || '']: 'pro',
       [this.configService.get<string>('STRIPE_PRICE_PREMIUM') || '']: 'premium',
     };
-    console.log('🗺️ Mapeamento:', mapping);
-    console.log('🔎 Buscando por:', priceId);
-    const result = mapping[priceId] || 'free';
-    console.log('🏁 Resultado do mapeamento:', result);
-    return result;
+    return mapping[priceId] || 'free';
   }
 
   async createPortalSession(customerId: string) {

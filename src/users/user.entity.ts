@@ -58,7 +58,7 @@ export class UserEntity {
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
   longitudeOrigem!: number | null;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.80 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.8 })
   taxaFreteKm!: number;
 
   @Column({ type: 'varchar', length: 18, nullable: true })
@@ -84,6 +84,10 @@ export class UserEntity {
 
   @Column({ type: 'varchar', nullable: true })
   stripeSubscriptionStatus!: string | null;
+
+  // NOVO: indica se o setup inicial foi pago
+  @Column({ type: 'boolean', default: false })
+  setupPaid!: boolean;
 
   @Column({ type: 'jsonb', nullable: true, default: {} })
   onboardingSteps!: Record<string, boolean>;

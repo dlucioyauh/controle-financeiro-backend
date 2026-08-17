@@ -1,29 +1,61 @@
-import { Controller, Post, Body, Req, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { StripeService } from './stripe.service';
 import { AuthGuard } from '../auth/auth.guard';
-import type { Request } from 'express';
 
 @Controller('stripe')
-@UseGuards(AuthGuard)
 export class StripeController {
-  constructor(private stripeService: StripeService) {}
+  constructor(
+    private stripeService: StripeService,
+    private configService: ConfigService,
+  ) {}
 
-  @Post('create-checkout-session')
-  async createCheckout(@Body() body: { priceId: string }, @Req() req: Request) {
-    const userId = (req as any).user?.userId;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const successUrl = frontendUrl + '/app/configuracoes?session_id={CHECKOUT_SESSION_ID}';
-    const cancelUrl = frontendUrl + '/app/configuracoes';
-    const url = await this.stripeService.createCheckoutSession(userId, body.priceId, successUrl, cancelUrl);
-    return { url };
+  @Post('checkout')
+  @UseGuards(AuthGuard)
+  async createCheckout(@Req() req, @Body('priceId') priceId: string) {
+    try {
+      const userId = req.user.userId;
+      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:5173';
+      const url = await this.stripeService.createCheckoutSession(
+        userId,
+        priceId,
+        `${frontendUrl}/app/configuracoes?checkout=success`,
+        `${frontendUrl}/app/configuracoes?checkout=cancel`,
+      );
+      return { url };
+    } catch (err: any) {
+      throw new BadRequestException(`Erro ao criar checkout: ${err.message}`);
+    }
   }
 
-  @Get('portal')
-  async portal(@Req() req: Request) {
-    const userId = (req as any).user?.userId;
-    const user = await (this.stripeService as any).usersService.findById(userId); // acessaremos o usersService
-    if (!user?.stripeCustomerId) throw new Error('Cliente Stripe não encontrado');
-    const url = await this.stripeService.createPortalSession(user.stripeCustomerId);
-    return { url };
+  @Post('setup-checkout')
+  @UseGuards(AuthGuard)
+  async createSetupCheckout(@Req() req, @Body('priceId') priceId: string) {
+    try {
+      const userId = req.user.userId;
+      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:5173';
+      const url = await this.stripeService.createSetupCheckoutSession(
+        userId,
+        priceId,
+        `${frontendUrl}/app/configuracoes?setup=success`,
+        `${frontendUrl}/app/configuracoes?setup=cancel`,
+      );
+      return { url };
+    } catch (err: any) {
+      throw new BadRequestException(`Erro ao criar checkout de setup: ${err.message}`);
+    }
+  }
+
+  @Post('portal')
+  @UseGuards(AuthGuard)
+  async createPortal(@Req() req) {
+    try {
+      const customerId = req.user.stripeCustomerId;
+      if (!customerId) return { url: null };
+      const url = await this.stripeService.createPortalSession(customerId);
+      return { url };
+    } catch (err: any) {
+      throw new BadRequestException(`Erro ao abrir portal: ${err.message}`);
+    }
   }
 }

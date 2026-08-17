@@ -7,7 +7,13 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
 // --- Filtro Global de Exceções ---
-import { Catch, ExceptionFilter, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Catch,
+  ExceptionFilter,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 
 @Catch()
 export class GlobalErrorFilter implements ExceptionFilter {
@@ -31,7 +37,8 @@ export class GlobalErrorFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message: message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : exception.stack,
+      stack:
+        process.env.NODE_ENV === 'production' ? undefined : exception.stack,
     });
   }
 }
@@ -47,14 +54,43 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // 🔧 CORS dinâmico – lê a variável CORS_ORIGIN
-  const corsOrigin = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-    : [
-        'http://localhost:5173',
-        'https://controle-financeiro-frontend-two.vercel.app',
-        /\.vercel\.app$/,
-      ];
+  // 🔧 CORS dinâmico e flexível
+  const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    const allowedOrigins = [
+      // Localhost
+      'http://localhost:5173',
+      'http://localhost:3000',
+      // Produção
+      'https://ionfinance.com.br',
+      'https://www.ionfinance.com.br',
+      'https://api.ionfinance.com.br',
+      // Padrão para previews da Vercel (qualquer subdomínio .vercel.app)
+      /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/,
+      // Padrão específico para projetos do usuário
+      /^https:\/\/([a-z0-9-]+\.)*dlucioyauhs-projects\.vercel\.app$/,
+    ];
+
+    // Permite requisições sem origin (ex: Postman, curl, mobile)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    // Verifica se a origem está na lista ou corresponde a algum padrão
+    const isAllowed = allowedOrigins.some((allowed) => {
+      if (typeof allowed === 'string') {
+        return allowed === origin;
+      }
+      return allowed.test(origin);
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 Origem bloqueada pelo CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  };
 
   app.enableCors({
     origin: corsOrigin,
