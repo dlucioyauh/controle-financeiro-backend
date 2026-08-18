@@ -10,19 +10,18 @@ export class StripeWebhookController {
     @Headers('stripe-signature') signature: string,
     @Req() req: any,
   ) {
-    // Garante que o payload bruto seja um Buffer
-    let payload: Buffer;
+    // Lê o corpo bruto da requisição (chunks)
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const rawBody = Buffer.concat(chunks);
 
-    if (req.rawBody) {
-      payload = req.rawBody;
-    } else if (req.body) {
-      // Se req.body for um objeto, tenta converter para string
-      payload = Buffer.from(JSON.stringify(req.body));
-    } else {
+    if (rawBody.length === 0) {
       throw new Error('No webhook payload was provided.');
     }
 
-    await this.stripeService.handleWebhookEvent(payload, signature);
+    await this.stripeService.handleWebhookEvent(rawBody, signature);
     return { received: true };
   }
 }

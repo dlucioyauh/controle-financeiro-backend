@@ -1,4 +1,3 @@
-import * as bodyParser from 'body-parser';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { NestFactory } from '@nestjs/core';
@@ -36,8 +35,7 @@ export class GlobalErrorFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message: message,
-      stack:
-        process.env.NODE_ENV === 'production' ? undefined : exception.stack,
+      stack: process.env.NODE_ENV === 'production' ? undefined : exception.stack,
     });
   }
 }
@@ -89,15 +87,6 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
-  });
-
-  // 🔑 Middleware para webhook do Stripe – usando verificação de URL
-  app.use((req: any, res: any, next: any) => {
-    if (req.originalUrl === '/stripe/webhook') {
-      bodyParser.raw({ type: 'application/json' })(req, res, next);
-    } else {
-      next();
-    }
   });
 
   app.useGlobalPipes(
