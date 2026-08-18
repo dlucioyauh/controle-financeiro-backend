@@ -2,19 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { UsersService } from '../users/users.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class StripeService {
-  private stripe: any; // ← mudança aqui: use any
+  private stripe: any;
 
   constructor(
     private configService: ConfigService,
     private usersService: UsersService,
+    private mailService: MailService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) throw new Error('STRIPE_SECRET_KEY não configurado');
     this.stripe = new Stripe(secretKey, {
-      apiVersion: '2026-05-27.dahlia', // versão exata do seu Stripe
+      apiVersion: '2026-05-27.dahlia',
     });
   }
 
@@ -103,14 +105,23 @@ export class StripeService {
       const session = event.data.object;
       const metadata = session.metadata || {};
 
+      // Setup pago
       if (metadata.type === 'setup' && metadata.userId) {
         await this.usersService.updatePerfil(metadata.userId, {
           setupPaid: true,
         } as any);
-        console.log(`✅ Setup pago para usuário ${metadata.userId}`);
+
+        const user = await this.usersService.findById(metadata.userId);
+        if (user?.email) {
+          await this.mailService.sendSetupConfirmation(
+            user.email,
+            user.nome || user.username,
+          );
+        }
         return;
       }
 
+      // Assinatura
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
       const priceId = metadata.priceId || '';
@@ -122,6 +133,15 @@ export class StripeService {
         stripeSubscriptionStatus: 'active',
         plano,
       } as any);
+
+      const user = await this.usersService.findByStripeCustomerId(customerId);
+      if (user?.email) {
+        await this.mailService.sendSubscriptionConfirmation(
+          user.email,
+          user.nome || user.username,
+          plano,
+        );
+      }
     } else if (event.type === 'customer.subscription.updated') {
       const subscription = event.data.object;
       const customerId = subscription.customer as string;
