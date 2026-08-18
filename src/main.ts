@@ -52,31 +52,26 @@ async function bootstrap() {
     environment: process.env.RAILWAY_ENVIRONMENT || 'development',
   });
 
+  // ⚠️ Importante: rawBody: true para o Stripe webhook
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // 🔧 CORS dinâmico e flexível
+  // 🔧 CORS dinâmico
   const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     const allowedOrigins = [
-      // Localhost
       'http://localhost:5173',
       'http://localhost:3000',
-      // Produção
       'https://ionfinance.com.br',
       'https://www.ionfinance.com.br',
       'https://api.ionfinance.com.br',
-      // Padrão para previews da Vercel (qualquer subdomínio .vercel.app)
       /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/,
-      // Padrão específico para projetos do usuário
       /^https:\/\/([a-z0-9-]+\.)*dlucioyauhs-projects\.vercel\.app$/,
     ];
 
-    // Permite requisições sem origin (ex: Postman, curl, mobile)
     if (!origin) {
       callback(null, true);
       return;
     }
 
-    // Verifica se a origem está na lista ou corresponde a algum padrão
     const isAllowed = allowedOrigins.some((allowed) => {
       if (typeof allowed === 'string') {
         return allowed === origin;
@@ -99,6 +94,7 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
   });
 
+  // 🔑 Middleware para o webhook do Stripe – DEVE VIR ANTES DO PARSER GLOBAL
   app.use('/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
 
   app.useGlobalPipes(
