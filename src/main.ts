@@ -6,7 +6,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
-// --- Filtro Global de Exceções ---
 import {
   Catch,
   ExceptionFilter,
@@ -42,7 +41,6 @@ export class GlobalErrorFilter implements ExceptionFilter {
     });
   }
 }
-// ----------------------------------------------------------------
 
 async function bootstrap() {
   Sentry.init({
@@ -52,10 +50,9 @@ async function bootstrap() {
     environment: process.env.RAILWAY_ENVIRONMENT || 'development',
   });
 
-  // ⚠️ Importante: rawBody: true para o Stripe webhook
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // 🔧 CORS dinâmico
+  // CORS dinâmico
   const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     const allowedOrigins = [
       'http://localhost:5173',
@@ -94,8 +91,14 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
   });
 
-  // 🔑 Middleware para o webhook do Stripe – DEVE VIR ANTES DO PARSER GLOBAL
-  app.use('/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
+  // 🔑 Middleware para webhook do Stripe – usando verificação de URL
+  app.use((req: any, res: any, next: any) => {
+    if (req.originalUrl === '/stripe/webhook') {
+      bodyParser.raw({ type: 'application/json' })(req, res, next);
+    } else {
+      next();
+    }
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
