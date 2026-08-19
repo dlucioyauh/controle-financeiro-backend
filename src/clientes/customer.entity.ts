@@ -27,19 +27,23 @@ export class Customer {
   cidade!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  estado!: string | null;          // novo
+  estado!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  cep!: string | null;             // novo
+  cep!: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
-  latitude!: number | null;        // novo
+  latitude!: number | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
-  longitude!: number | null;       // novo
+  longitude!: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
+
+  // ✅ NOVO CAMPO
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

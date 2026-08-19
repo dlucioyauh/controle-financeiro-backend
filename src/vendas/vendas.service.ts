@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +9,8 @@ import { WhatsAppService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class VendasService {
+  private readonly logger = new Logger(VendasService.name);
+
   constructor(
     @InjectRepository(VendaEntity)
     private vendaRepository: Repository<VendaEntity>,
@@ -19,77 +21,43 @@ export class VendasService {
   ) {}
 
   // --- CRUD ---
-  async criar(data: Partial<VendaEntity>): Promise<VendaEntity> {
-    console.log('📝 Criando venda com dados:', data);
+  async criar(
+    data: Partial<VendaEntity>,
+    userId: string,
+    username: string,
+  ): Promise<VendaEntity> {
+    this.logger.log(`🚀 Criando venda para userId=${userId}`);
 
-    // Calcula precoUnitario se valorTotal e quantidade existirem
+    // Garante que a venda pertence ao usuário autenticado
+    data.userId = userId;
+    data.usuario = username;
+
     if (data.valorTotal && data.quantidade) {
       data.precoUnitario = Number(data.valorTotal) / Number(data.quantidade);
     }
 
     const venda = this.vendaRepository.create(data);
     const saved = await this.vendaRepository.save(venda);
-    console.log('✅ Venda salva, ID:', saved.id);
+    this.logger.log(`✅ Venda salva com ID: ${saved.id}`);
 
-    // --- Envia comprovante via WhatsApp (se configurado) ---
-    try {
-      const user = await this.usersService.findOne(data.usuario || '');
-      console.log('👤 Usuário:', user?.username, 'WhatsApp ativado?', user?.whatsappEnabled);
-
-      if (user?.whatsappEnabled && user?.whatsappNumber) {
-        let targetNumber: string | null = null;
-
-        // 🔍 Prioridade 1: se a venda tem clienteId, busca o telefone do cliente
-        if (data.clienteId) {
-          try {
-            const cliente = await this.clientesService.buscarPorId(data.clienteId);
-            if (cliente?.telefone) {
-              targetNumber = cliente.telefone;
-              console.log('📱 Telefone do cliente encontrado:', targetNumber);
-            } else {
-              console.log('⚠️ Cliente não possui telefone cadastrado.');
-            }
-          } catch (err) {
-            console.log('⚠️ Cliente não encontrado com o ID fornecido.');
-          }
-        }
-
-        // 🔽 Fallback: se não encontrou telefone do cliente, usa o número do usuário
-        if (!targetNumber) {
-          targetNumber = user.whatsappNumber;
-          console.log('📱 Usando telefone do usuário (fallback):', targetNumber);
-        }
-
-        if (targetNumber) {
-          console.log('📤 Enviando comprovante para:', targetNumber);
-          const userData = {
-            nomeNegocio: user?.nomeNegocio || undefined,
-            cnpj: user?.cnpj || undefined,
-          };
-          const result = await this.whatsappService.sendSaleReceipt(targetNumber, saved, userData);
-          console.log('📤 Resultado do envio:', result);
-        } else {
-          console.log('⚠️ Nenhum número de telefone disponível para envio.');
-        }
-      } else {
-        console.log('⚠️ WhatsApp não ativado para este usuário ou número não configurado.');
-      }
-    } catch (error: any) {
-      console.error('❌ Erro ao enviar comprovante WhatsApp:', error.message);
-    }
+    // Notificação em background (não bloqueia a resposta)
+    this.notificarVenda(saved, userId).catch((err) => {
+      this.logger.error(`❌ Erro inesperado na notificação: ${err.message}`);
+    });
 
     return saved;
   }
 
-  async listar(): Promise<VendaEntity[]> {
-    return this.vendaRepository.find({ order: { dataVenda: 'DESC' } });
-  }
-
-  async listarPorUsuario(usuario: string): Promise<VendaEntity[]> {
+  async listarPorUsuario(userId: string): Promise<VendaEntity[]> {
     return this.vendaRepository.find({
-      where: { usuario },
+      where: { userId },
       order: { dataVenda: 'DESC' },
     });
+  }
+
+  async listar(): Promise<VendaEntity[]> {
+    // Não deve ser usado sem filtro
+    throw new Error('Método listar sem filtro não é permitido');
   }
 
   async buscarPorId(id: string): Promise<VendaEntity> {
@@ -114,22 +82,17 @@ export class VendasService {
   }
 
   // --- ESTATÍSTICAS ---
-  async getEstatisticas(usuario: string, dataInicio: string, dataFim: string) {
-    console.log('### getEstatisticas chamado ###');
-    console.log('usuario:', usuario);
-    console.log('dataInicio:', dataInicio);
-    console.log('dataFim:', dataFim);
+  async getEstatisticas(userId: string, dataInicio: string, dataFim: string) {
+    this.logger.log(`📊 Estatísticas para userId=${userId} de ${dataInicio} até ${dataFim}`);
 
     const vendas = await this.vendaRepository
       .createQueryBuilder('v')
-      .where('v.usuario = :usuario', { usuario })
+      .where('v.userId = :userId', { userId })
       .andWhere('v.dataVenda BETWEEN :inicio AND :fim', {
         inicio: dataInicio,
         fim: dataFim + ' 23:59:59',
       })
       .getMany();
-
-    console.log('vendas encontradas:', vendas.length);
 
     const totalReceita = vendas.reduce((sum, v) => sum + Number(v.valorTotal), 0);
     const totalVendas = vendas.length;
@@ -170,13 +133,13 @@ export class VendasService {
     };
   }
 
-  async getTopClientes(usuario: string, dataInicio: string, dataFim: string) {
+  async getTopClientes(userId: string, dataInicio: string, dataFim: string) {
     const qb = this.vendaRepository
       .createQueryBuilder('v')
       .select('v.clienteNome', 'nome')
       .addSelect('COUNT(v.id)', 'pedidos')
       .addSelect('SUM(v.valorTotal)', 'faturamento')
-      .where('v.usuario = :usuario', { usuario })
+      .where('v.userId = :userId', { userId })
       .andWhere('v.dataVenda BETWEEN :inicio AND :fim', {
         inicio: dataInicio,
         fim: dataFim + ' 23:59:59',
@@ -194,8 +157,8 @@ export class VendasService {
   }
 
   // --- FRETE ---
-  async calcularFrete(usuario: string, clienteId: string) {
-    const user = await this.usersService.findOne(usuario);
+  async calcularFrete(userId: string, clienteId: string) {
+    const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
     if (!user.latitudeOrigem || !user.longitudeOrigem) {
@@ -245,5 +208,50 @@ export class VendasService {
       valorFrete: valorFrete.toFixed(2),
       taxaFreteKm: taxa,
     };
+  }
+
+  // --- NOTIFICAÇÃO WHATSAPP (privada) ---
+  private async notificarVenda(venda: VendaEntity, userId: string) {
+    this.logger.log('📱 TENTANDO ENVIAR WHATSAPP...');
+    try {
+      const user = await this.usersService.findById(userId);
+      if (!user) {
+        this.logger.warn('Usuário não encontrado para notificação.');
+        return;
+      }
+
+      if (!user.whatsappEnabled || !user.whatsappNumber) {
+        this.logger.warn('WhatsApp desabilitado ou sem número.');
+        return;
+      }
+
+      let targetNumber: string | null = null;
+
+      if (venda.clienteId) {
+        try {
+          const cliente = await this.clientesService.buscarPorId(venda.clienteId);
+          targetNumber = (cliente as any)?.telefone || null;
+          if (targetNumber) this.logger.log(`📱 Telefone do cliente: ${targetNumber}`);
+        } catch {
+          this.logger.warn('Cliente não encontrado ao tentar notificar.');
+        }
+      }
+
+      if (!targetNumber) {
+        targetNumber = user.whatsappNumber;
+        this.logger.log(`📱 Usando telefone do usuário: ${targetNumber}`);
+      }
+
+      if (targetNumber) {
+        const userData = {
+          nomeNegocio: user?.nomeNegocio || undefined,
+          cnpj: user?.cnpj || undefined,
+        };
+        const result = await this.whatsappService.sendSaleReceipt(targetNumber, venda, userData);
+        this.logger.log(`📤 Resultado do envio: ${result}`);
+      }
+    } catch (error: any) {
+      this.logger.error(`Erro ao enviar WhatsApp: ${error.message}`);
+    }
   }
 }

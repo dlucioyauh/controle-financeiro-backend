@@ -26,11 +26,15 @@ export class DespesaEntity {
   @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
 
+  // ✅ NOVO CAMPO
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
+
   @Column({ type: 'boolean', default: false })
   pessoal!: boolean;
 
   @Column({ type: 'varchar', default: 'despesa' })
-  tipo!: string;   // 'despesa' ou 'receita'
+  tipo!: string;
 
   @CreateDateColumn()
   createdAt!: Date;

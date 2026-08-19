@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('ingredientes')
@@ -13,17 +14,8 @@ export class IngredienteEntity {
   @Column({ type: 'varchar' })
   nome!: string;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
-  precoCompra!: number | null;
-
-  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
-  quantidadeCompra!: number | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  unidadeMedida!: string | null;
-
-  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
-  preco!: number | null;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  custo!: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   unidade!: string | null;
@@ -31,6 +23,13 @@ export class IngredienteEntity {
   @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
 
+  // ✅ NOVO CAMPO
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }
