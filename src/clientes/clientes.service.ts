@@ -10,32 +10,30 @@ export class ClientesService {
     private clientesRepository: Repository<Customer>,
   ) {}
 
-  async criar(data: Partial<Customer>): Promise<Customer> {
-    const cliente = this.clientesRepository.create(data);
+  async criar(data: Partial<Customer>, userId: string, username: string): Promise<Customer> {
+    const cliente = this.clientesRepository.create({
+      ...data,
+      userId,
+      usuario: username,
+    });
     return this.clientesRepository.save(cliente);
   }
 
-  async listarPorUsuario(usuario: string): Promise<Customer[]> {
-    try {
-      console.log('🔍 Buscando clientes para usuário:', usuario);
-      const result = await this.clientesRepository.find({
-        where: { usuario },
-        order: { createdAt: 'DESC' },
-      });
-      console.log('📦 Resultado da query:', result);
-      return result;
-    } catch (error) {
-      console.error('❌ Erro no service listarPorUsuario:', error);
-      throw error;
-    }
+  async listarPorUsuario(userId: string): Promise<Customer[]> {
+    console.log('🔍 Buscando clientes para userId:', userId);
+    const result = await this.clientesRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+    console.log('📦 Clientes encontrados:', result.length);
+    return result;
   }
 
-  // Método corrigido para o mapa (filtra clientes com latitude não nula)
-  async listarParaMapa(usuario: string): Promise<Customer[]> {
+  async listarParaMapa(userId: string): Promise<Customer[]> {
     return this.clientesRepository.find({
       where: {
-        usuario,
-        latitude: Not(IsNull()), // ← CORREÇÃO: usa operadores do TypeORM em vez de { $ne: null }
+        userId,
+        latitude: Not(IsNull()),
       },
     });
   }
