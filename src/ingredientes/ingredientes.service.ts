@@ -10,7 +10,11 @@ export class IngredientesService {
     private ingredienteRepository: Repository<IngredienteEntity>,
   ) {}
 
-  async criar(data: Partial<IngredienteEntity>, userId: string, username: string): Promise<IngredienteEntity> {
+  async criar(
+    data: Partial<IngredienteEntity>,
+    userId: string,
+    username: string,
+  ): Promise<IngredienteEntity> {
     const ingrediente = this.ingredienteRepository.create({
       ...data,
       userId,
@@ -34,7 +38,10 @@ export class IngredientesService {
     return ingrediente;
   }
 
-  async atualizar(id: string, data: Partial<IngredienteEntity>): Promise<IngredienteEntity> {
+  async atualizar(
+    id: string,
+    data: Partial<IngredienteEntity>,
+  ): Promise<IngredienteEntity> {
     const ingrediente = await this.buscarPorId(id);
     Object.assign(ingrediente, data);
     return this.ingredienteRepository.save(ingrediente);
