@@ -16,7 +16,7 @@ export class ClientesController {
   @Post()
   criar(@Body() data: any, @Req() req: Request) {
     const user = (req as any).user;
-    return this.clientesService.criar({ ...data, userId: user.userId, usuario: user.username });
+    return this.clientesService.criar(data, user.userId, user.username);
   }
 
   @Get()
