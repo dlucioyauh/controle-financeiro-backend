@@ -3,7 +3,6 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('ingredientes')
@@ -32,13 +31,11 @@ export class IngredienteEntity {
   @Column({ type: 'varchar', nullable: true })
   unidade!: string | null;
 
-  // ✅ Campo de isolamento
   @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  // ❌ Removido: @UpdateDateColumn() updatedAt não existe na tabela
 }
