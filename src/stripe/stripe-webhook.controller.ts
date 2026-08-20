@@ -8,10 +8,20 @@ export class StripeWebhookController {
   @Post('webhook')
   async handleWebhook(
     @Headers('stripe-signature') signature: string,
-    @Req() req: any, // use any para evitar problema de tipagem
+    @Req() req: any,
   ) {
-    const payload = req.rawBody as Buffer;
-    await this.stripeService.handleWebhookEvent(payload, signature);
+    // Lê o corpo bruto da requisição (chunks)
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const rawBody = Buffer.concat(chunks);
+
+    if (rawBody.length === 0) {
+      throw new Error('No webhook payload was provided.');
+    }
+
+    await this.stripeService.handleWebhookEvent(rawBody, signature);
     return { received: true };
   }
 }

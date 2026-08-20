@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('clientes')
@@ -40,6 +41,13 @@ export class Customer {
   @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
 
+  // ✅ NOVO CAMPO
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
-}// force deploy backend
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+}

@@ -1,4 +1,3 @@
-import * as bodyParser from 'body-parser';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { NestFactory } from '@nestjs/core';
@@ -6,7 +5,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
-// --- Filtro Global de Exceções ---
 import {
   Catch,
   ExceptionFilter,
@@ -37,12 +35,10 @@ export class GlobalErrorFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message: message,
-      stack:
-        process.env.NODE_ENV === 'production' ? undefined : exception.stack,
+      stack: process.env.NODE_ENV === 'production' ? undefined : exception.stack,
     });
   }
 }
-// ----------------------------------------------------------------
 
 async function bootstrap() {
   Sentry.init({
@@ -54,29 +50,23 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // 🔧 CORS dinâmico e flexível
+  // CORS dinâmico
   const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     const allowedOrigins = [
-      // Localhost
       'http://localhost:5173',
       'http://localhost:3000',
-      // Produção
       'https://ionfinance.com.br',
       'https://www.ionfinance.com.br',
       'https://api.ionfinance.com.br',
-      // Padrão para previews da Vercel (qualquer subdomínio .vercel.app)
       /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/,
-      // Padrão específico para projetos do usuário
       /^https:\/\/([a-z0-9-]+\.)*dlucioyauhs-projects\.vercel\.app$/,
     ];
 
-    // Permite requisições sem origin (ex: Postman, curl, mobile)
     if (!origin) {
       callback(null, true);
       return;
     }
 
-    // Verifica se a origem está na lista ou corresponde a algum padrão
     const isAllowed = allowedOrigins.some((allowed) => {
       if (typeof allowed === 'string') {
         return allowed === origin;
@@ -98,8 +88,6 @@ async function bootstrap() {
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
   });
-
-  app.use('/stripe/webhook', bodyParser.raw({ type: 'application/json' }));
 
   app.useGlobalPipes(
     new ValidationPipe({

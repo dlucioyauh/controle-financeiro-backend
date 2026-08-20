@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('ingredientes')
@@ -22,15 +23,22 @@ export class IngredienteEntity {
   @Column({ type: 'varchar', nullable: true })
   unidadeMedida!: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  usuario!: string | null;
+
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
   preco!: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   unidade!: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
-  usuario!: string | null;
+  // ✅ Campo de isolamento
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

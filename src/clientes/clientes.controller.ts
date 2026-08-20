@@ -15,28 +15,20 @@ export class ClientesController {
   @UseGuards(LimiteClientesGuard)
   @Post()
   criar(@Body() data: any, @Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.clientesService.criar({ ...data, usuario });
+    const user = (req as any).user;
+    return this.clientesService.criar(data, user.userId, user.username);
   }
 
   @Get()
-  async listar(@Req() req: Request) {
-    try {
-      const usuario = (req as any).user?.username;
-      console.log('📋 Listar clientes - usuário:', usuario);
-      const result = await this.clientesService.listarPorUsuario(usuario);
-      console.log('✅ Clientes encontrados:', result.length);
-      return result;
-    } catch (error) {
-      console.error('❌ Erro no controller listar:', error);
-      throw error;
-    }
+  listar(@Req() req: Request) {
+    const user = (req as any).user;
+    return this.clientesService.listarPorUsuario(user.userId);
   }
 
   @Get('mapa')
   listarParaMapa(@Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.clientesService.listarParaMapa(usuario);
+    const user = (req as any).user;
+    return this.clientesService.listarParaMapa(user.userId);
   }
 
   @Get(':id')

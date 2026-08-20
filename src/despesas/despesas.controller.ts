@@ -14,38 +14,35 @@ export class DespesasController {
 
   @Post()
   criar(
-    @Body() data: { descricao: string; valor: number; data: string; categoria?: string; pessoal?: boolean; tipo?: string },
+    @Body() data: any,
     @Req() req: Request,
   ): Promise<DespesaEntity> {
-    const usuario = (req as any).user?.username;
-    return this.despesasService.criar({ ...data, usuario });
+    const user = (req as any).user;
+    return this.despesasService.criar({ ...data, userId: user.userId, usuario: user.username });
   }
 
   @Get()
   listar(@Req() req: Request): Promise<DespesaEntity[]> {
-    const usuario = (req as any).user?.username;
-    return this.despesasService.listarPorUsuario(usuario);
+    const user = (req as any).user;
+    return this.despesasService.listarPorUsuario(user.userId);
   }
 
   @Get('pessoais')
   listarPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
-    const usuario = (req as any).user?.username;
-    return this.despesasService.listarPessoais(usuario);
+    const user = (req as any).user;
+    return this.despesasService.listarPessoais(user.userId);
   }
 
   @Get('receitas-pessoais')
   listarReceitasPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
-    const usuario = (req as any).user?.username;
-    return this.despesasService.listarReceitasPessoais(usuario);
+    const user = (req as any).user;
+    return this.despesasService.listarReceitasPessoais(user.userId);
   }
 
   @Get('totais')
-  async getTotais(
-    @Req() req: Request,
-    @Query() filter: FilterDespesasDto,
-  ) {
-    const usuario = (req as any).user?.username;
-    return this.despesasService.getTotais(usuario, filter.pessoal, filter.tipo);
+  getTotais(@Req() req: Request, @Query() filter: FilterDespesasDto) {
+    const user = (req as any).user;
+    return this.despesasService.getTotais(user.userId, filter.pessoal, filter.tipo);
   }
 
   @Get(':id')
@@ -54,10 +51,7 @@ export class DespesasController {
   }
 
   @Patch(':id')
-  atualizar(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<{ descricao: string; valor: number; data: string; categoria: string; pessoal: boolean; tipo: string }>,
-  ): Promise<DespesaEntity> {
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: any) {
     return this.despesasService.atualizar(id, data);
   }
 

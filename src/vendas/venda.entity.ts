@@ -24,7 +24,7 @@ export class VendaEntity {
   quantidade!: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  precoUnitario!: number | null; // ← NOVO
+  precoUnitario!: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   canalVenda!: string | null;
@@ -40,6 +40,10 @@ export class VendaEntity {
 
   @Column({ type: 'varchar' })
   usuario!: string;
+
+  // ✅ NOVO CAMPO
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

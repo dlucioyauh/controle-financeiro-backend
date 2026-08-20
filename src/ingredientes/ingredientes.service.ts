@@ -10,14 +10,22 @@ export class IngredientesService {
     private ingredienteRepository: Repository<IngredienteEntity>,
   ) {}
 
-  async criar(data: Partial<IngredienteEntity>): Promise<IngredienteEntity> {
-    const ingrediente = this.ingredienteRepository.create(data);
+  async criar(
+    data: Partial<IngredienteEntity>,
+    userId: string,
+    username: string,
+  ): Promise<IngredienteEntity> {
+    const ingrediente = this.ingredienteRepository.create({
+      ...data,
+      userId,
+      usuario: username,
+    });
     return this.ingredienteRepository.save(ingrediente);
   }
 
-  async listarPorUsuario(usuario: string): Promise<IngredienteEntity[]> {
+  async listarPorUsuario(userId: string): Promise<IngredienteEntity[]> {
     return this.ingredienteRepository.find({
-      where: { usuario },
+      where: { userId },
       order: { nome: 'ASC' },
     });
   }
@@ -30,7 +38,10 @@ export class IngredientesService {
     return ingrediente;
   }
 
-  async atualizar(id: string, data: Partial<IngredienteEntity>): Promise<IngredienteEntity> {
+  async atualizar(
+    id: string,
+    data: Partial<IngredienteEntity>,
+  ): Promise<IngredienteEntity> {
     const ingrediente = await this.buscarPorId(id);
     Object.assign(ingrediente, data);
     return this.ingredienteRepository.save(ingrediente);
