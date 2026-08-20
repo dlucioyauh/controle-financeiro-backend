@@ -13,14 +13,14 @@ export class IngredientesController {
 
   @Post()
   criar(@Body() data: Partial<IngredienteEntity>, @Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.ingredientesService.criar({ ...data, usuario });
+    const user = (req as any).user;
+    return this.ingredientesService.criar(data, user.userId, user.username);
   }
 
   @Get()
   listar(@Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.ingredientesService.listarPorUsuario(usuario);
+    const user = (req as any).user;
+    return this.ingredientesService.listarPorUsuario(user.userId);
   }
 
   @Get(':id')
