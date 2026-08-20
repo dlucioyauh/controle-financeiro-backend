@@ -64,7 +64,7 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  // ✅ NOVO MÉTODO: busca por stripeCustomerId
+  // ✅ Busca por stripeCustomerId
   async findByStripeCustomerId(customerId: string) {
     return this.usersRepository.findOne({
       where: { stripeCustomerId: customerId },
@@ -135,24 +135,24 @@ export class UsersService {
         const [vendas, despesas, clientes, receitas, ingredientes] =
           await Promise.all([
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM vendas WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM vendas WHERE "userId" = $1`,
+              [user.id],
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM despesa WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM despesa WHERE "userId" = $1`,
+              [user.id],
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM clientes WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM clientes WHERE "userId" = $1`,
+              [user.id],
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM receitas WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM receitas WHERE "userId" = $1`,
+              [user.id],
             ),
             this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM ingredientes WHERE usuario = $1`,
-              [user.username],
+              `SELECT COUNT(*) FROM ingredientes WHERE "userId" = $1`,
+              [user.id],
             ),
           ]);
 
@@ -171,6 +171,33 @@ export class UsersService {
   }
 
   async deletarUsuario(id: string) {
+    // Remove todos os dados dependentes
+    await this.usersRepository.manager.query(
+      `DELETE FROM vendas WHERE "userId" = $1`,
+      [id],
+    );
+    await this.usersRepository.manager.query(
+      `DELETE FROM clientes WHERE "userId" = $1`,
+      [id],
+    );
+    await this.usersRepository.manager.query(
+      `DELETE FROM despesa WHERE "userId" = $1`,
+      [id],
+    );
+    await this.usersRepository.manager.query(
+      `DELETE FROM receitas WHERE "userId" = $1`,
+      [id],
+    );
+    await this.usersRepository.manager.query(
+      `DELETE FROM ingredientes WHERE "userId" = $1`,
+      [id],
+    );
+    await this.usersRepository.manager.query(
+      `DELETE FROM user_preferences WHERE "userId" = $1`,
+      [id],
+    );
+
+    // Finalmente exclui o usuário
     return this.usersRepository.delete(id);
   }
 
