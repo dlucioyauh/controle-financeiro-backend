@@ -3,7 +3,6 @@ import { AuthGuard } from '../auth/auth.guard';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { PlanoGuard } from '../auth/plano.guard';
 import { RelatoriosAvancadosService } from './relatorios-avancados.service';
-import { RelatorioFiltrosDto } from './dto/relatorio-filtros.dto';
 import type { Request } from 'express';
 
 @Controller('relatorios-avancados')
@@ -15,9 +14,17 @@ export class RelatoriosAvancadosController {
   ) {}
 
   @Get('resumo')
-  async getResumo(@Req() req: Request, @Query() filtros: RelatorioFiltrosDto) {
+  async getResumo(@Req() req: Request, @Query() query: any) {
     const user = (req as any).user;
-    const usuario = user.username;
+
+    // ✅ CORREÇÃO: Sanitizar strings vazias para undefined para evitar falhas no validador e no Date
+    const filtros = {
+      dataInicio: query.dataInicio || undefined,
+      dataFim: query.dataFim || undefined,
+      tipo: query.tipo || 'ambos',
+      produto: query.produto || undefined,
+      clienteId: query.clienteId || undefined,
+    };
 
     const enabled = await this.featureFlags.findByName('novo_relatorio');
     if (!enabled) {
@@ -25,7 +32,8 @@ export class RelatoriosAvancadosController {
     }
 
     try {
-      return await this.service.getResumoGeral(usuario, filtros);
+      // ✅ CORREÇÃO: Passar userId em vez de username
+      return await this.service.getResumoGeral(user.userId, filtros);
     } catch (error) {
       const err = error as Error;
       throw new InternalServerErrorException(`Erro ao processar relatório: ${err.message}`);

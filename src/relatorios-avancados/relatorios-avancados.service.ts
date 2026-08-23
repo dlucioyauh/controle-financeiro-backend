@@ -1,11 +1,8 @@
-// src/relatorios-avancados/relatorios-avancados.service.ts
-
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, ILike } from 'typeorm';
 import { VendaEntity } from '../vendas/venda.entity';
 import { DespesaEntity } from '../despesas/despesa.entity';
-import { RelatorioFiltrosDto } from './dto/relatorio-filtros.dto';
 
 @Injectable()
 export class RelatoriosAvancadosService {
@@ -19,53 +16,56 @@ export class RelatoriosAvancadosService {
   ) {}
 
   private buildDateFilter(dataInicio?: string, dataFim?: string) {
-    if (dataInicio && dataFim) return Between(new Date(dataInicio), new Date(dataFim));
-    if (dataInicio) return Between(new Date(dataInicio), new Date());
-    if (dataFim) return Between(new Date('2000-01-01'), new Date(dataFim));
+    const start = dataInicio ? new Date(dataInicio) : undefined;
+    const end = dataFim ? new Date(dataFim) : undefined;
+
+    if (start && end) return Between(start, end);
+    if (start) return Between(start, new Date());
+    if (end) return Between(new Date('2000-01-01'), end);
     return undefined;
   }
 
-  async getResumoGeral(usuario: string, filtros: RelatorioFiltrosDto) {
+  async getResumoGeral(userId: string, filtros: any) {
     try {
-      const { dataInicio, dataFim, clienteId, produto } = filtros;
+      const { dataInicio, dataFim, clienteId, produto, tipo } = filtros;
       const dateFilter = this.buildDateFilter(dataInicio, dataFim);
 
       let vendas: VendaEntity[] = [];
       let totalVendas = 0;
-      if (filtros.tipo !== 'despesa') {
-        const whereVendas: any = { usuario };
+      if (tipo !== 'despesa') {
+        // ✅ CORREÇÃO LGPD: Filtrar por userId
+        const whereVendas: any = { userId };
         if (dateFilter) whereVendas.dataVenda = dateFilter;
-        // 👇 Correção principal: use clienteId, e não 'cliente'
         if (clienteId) whereVendas.clienteId = clienteId;
         if (produto) whereVendas.produto = ILike(`%${produto}%`);
+        
         vendas = await this.vendasRepo.find({ where: whereVendas });
-        totalVendas = vendas.reduce((acc, v) => acc + Number(v.valorTotal), 0);
+        totalVendas = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
       }
 
       let despesas: DespesaEntity[] = [];
       let totalDespesas = 0;
-      if (filtros.tipo !== 'venda') {
-        const whereDespesas: any = { usuario, pessoal: false };
+      if (tipo !== 'venda') {
+        // ✅ CORREÇÃO LGPD: Filtrar por userId
+        const whereDespesas: any = { userId, pessoal: false };
         if (dateFilter) whereDespesas.data = dateFilter;
+        
         despesas = await this.despesasRepo.find({ where: whereDespesas });
-        totalDespesas = despesas.reduce((acc, d) => acc + Number(d.valor), 0);
+        totalDespesas = despesas.reduce((acc, d) => acc + Number(d.valor || 0), 0);
       }
 
-      // ... (o resto do código de cálculo permanece igual) ...
       const lucro = totalVendas - totalDespesas;
       const ticketMedio = vendas.length ? totalVendas / vendas.length : 0;
 
-      // ... (cálculo de produtos mais vendidos, evolução diária) ...
-      // ... (criação dos objetos para gráficos) ...
-      
       const produtosMap = new Map<string, { quantidade: number; receita: number }>();
       vendas.forEach(v => {
         const nome = v.produto || 'Item Geral';
         const dados = produtosMap.get(nome) || { quantidade: 0, receita: 0 };
         dados.quantidade += Number(v.quantidade || 1);
-        dados.receita += Number(v.valorTotal);
+        dados.receita += Number(v.valorTotal || 0);
         produtosMap.set(nome, dados);
       });
+      
       const topProdutos = Array.from(produtosMap.entries())
         .map(([nome, dados]) => ({ nome, ...dados }))
         .sort((a, b) => b.receita - a.receita)
@@ -73,9 +73,10 @@ export class RelatoriosAvancadosService {
 
       const vendasPorDia = vendas.reduce((acc, v) => {
         const data = new Date(v.dataVenda).toISOString().split('T')[0];
-        acc[data] = (acc[data] || 0) + Number(v.valorTotal);
+        acc[data] = (acc[data] || 0) + Number(v.valorTotal || 0);
         return acc;
       }, {} as Record<string, number>);
+      
       const evolucao = Object.entries(vendasPorDia).map(([data, valor]) => ({ data, valor }));
 
       return {
