@@ -40,10 +40,13 @@ export class VendasService {
     const saved = await this.vendaRepository.save(venda);
     this.logger.log(`✅ Venda salva com ID: ${saved.id}`);
 
-    // Notificação em background (não bloqueia a resposta)
+    // 🚫 COMENTADO: Desativado o envio automático pelo servidor para evitar uso do número do admin.
+    // Agora o envio será feito manualmente pelo usuário via frontend (Opção 1 - Client-Side).
+    /*
     this.notificarVenda(saved, userId).catch((err) => {
       this.logger.error(`❌ Erro inesperado na notificação: ${err.message}`);
     });
+    */
 
     return saved;
   }
@@ -211,6 +214,7 @@ export class VendasService {
   }
 
   // --- NOTIFICAÇÃO WHATSAPP (privada) ---
+  // Mantido no código caso queira reativar no futuro com multi-tenant, mas atualmente inativo.
   private async notificarVenda(venda: VendaEntity, userId: string) {
     this.logger.log('📱 TENTANDO ENVIAR WHATSAPP...');
     try {
