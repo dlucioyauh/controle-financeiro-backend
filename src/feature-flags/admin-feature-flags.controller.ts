@@ -3,6 +3,8 @@ import { FeatureFlagsService } from './feature-flags.service';
 import { AuthGuard } from '../auth/auth.guard';
 import type { Request } from 'express';
 
+const ADMIN_USERNAMES = ['dlucio', 'admin'];
+
 @Controller('admin/features')
 @UseGuards(AuthGuard)
 export class AdminFeatureFlagsController {
@@ -11,9 +13,11 @@ export class AdminFeatureFlagsController {
   @Get()
   async getAllFlags(@Req() req: Request) {
     const user = (req as any).user;
-    if (user?.username !== 'dlucio') {
+    
+    if (!user || !ADMIN_USERNAMES.includes(user.username)) {
       throw new ForbiddenException('Acesso restrito ao administrador');
     }
+    
     return this.featureFlagsService.findAll();
   }
 
@@ -24,9 +28,11 @@ export class AdminFeatureFlagsController {
     @Req() req: Request,
   ) {
     const user = (req as any).user;
-    if (user?.username !== 'dlucio') {
+    
+    if (!user || !ADMIN_USERNAMES.includes(user.username)) {
       throw new ForbiddenException('Acesso restrito ao administrador');
     }
+    
     return this.featureFlagsService.updateFlag(id, enabled, user.username);
   }
 }
