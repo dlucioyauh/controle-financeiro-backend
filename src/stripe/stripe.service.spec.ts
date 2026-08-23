@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { StripeService } from './stripe.service';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from '../mail/mail.service'; // ✅ ADICIONADO
 
 // Mock da biblioteca Stripe para evitar inicialização real durante os testes
 jest.mock('stripe', () => {
@@ -35,6 +36,13 @@ describe('StripeService - getPlanFromPriceId', () => {
         StripeService,
         { provide: UsersService, useValue: {} },
         { provide: ConfigService, useValue: configService },
+        { 
+          provide: MailService, // ✅ ADICIONADO: Mock do MailService
+          useValue: { 
+            sendSubscriptionConfirmation: jest.fn(),
+            sendSetupConfirmation: jest.fn()
+          } 
+        },
       ],
     }).compile();
 
