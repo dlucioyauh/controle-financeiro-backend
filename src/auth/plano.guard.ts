@@ -23,11 +23,12 @@ export class PlanoGuard implements CanActivate {
       throw new ForbiddenException('Usuário não encontrado');
     }
 
-    const userPlan = userData.plano?.toLowerCase() || 'free';
+    // ✅ CORREÇÃO: Normalização robusta da string do plano
+    const userPlan = String(userData.plano || 'free').toLowerCase().trim();
     const allowedPlans = ['pro', 'premium'];
     
     if (!allowedPlans.includes(userPlan)) {
-      throw new ForbiddenException('Seu plano não permite acesso a esta funcionalidade. Faça upgrade para Pro ou Premium.');
+      throw new ForbiddenException(`Seu plano atual (${userPlan}) não permite acesso a esta funcionalidade. Faça upgrade para Pro ou Premium.`);
     }
 
     return true;
