@@ -1,6 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UsersService } from '../users/users.service';
+import type { Request } from 'express';
 
 @Injectable()
 export class PlanoGuard implements CanActivate {
@@ -10,8 +11,9 @@ export class PlanoGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user; // injetado pelo AuthGuard
+    // Tipagem via genérico do NestJS, evitando decoradores com tipos customizados
+    const request = context.switchToHttp().getRequest<Request & { user?: { userId: string; username: string } }>();
+    const user = request.user;
 
     if (!user || !user.userId) {
       throw new ForbiddenException('Usuário não autenticado');
@@ -23,9 +25,8 @@ export class PlanoGuard implements CanActivate {
     }
 
     const userPlan = userData.plano?.toLowerCase() || 'free';
-
-    // Defina os planos permitidos (apenas Pro e Premium)
     const allowedPlans = ['pro', 'premium'];
+    
     if (!allowedPlans.includes(userPlan)) {
       throw new ForbiddenException('Seu plano não permite acesso a esta funcionalidade. Faça upgrade para Pro ou Premium.');
     }

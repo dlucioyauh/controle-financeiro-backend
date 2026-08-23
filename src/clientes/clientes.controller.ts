@@ -14,20 +14,20 @@ export class ClientesController {
 
   @UseGuards(LimiteClientesGuard)
   @Post()
-  criar(@Body() data: any, @Req() req: Request) {
-    const user = (req as any).user;
+  criar(@Body() data: Partial<Customer>, @Req() req: Request) {
+    const user = req.user as { userId: string; username: string };
     return this.clientesService.criar(data, user.userId, user.username);
   }
 
   @Get()
   listar(@Req() req: Request) {
-    const user = (req as any).user;
+    const user = req.user as { userId: string; username: string };
     return this.clientesService.listarPorUsuario(user.userId);
   }
 
   @Get('mapa')
   listarParaMapa(@Req() req: Request) {
-    const user = (req as any).user;
+    const user = req.user as { userId: string; username: string };
     return this.clientesService.listarParaMapa(user.userId);
   }
 
@@ -37,7 +37,7 @@ export class ClientesController {
   }
 
   @Patch(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: any) {
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: Partial<Customer>) {
     return this.clientesService.atualizar(id, data);
   }
 
