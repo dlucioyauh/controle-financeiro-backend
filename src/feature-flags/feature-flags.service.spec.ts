@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager'; // ✅ ADICIONADO
 import { FeatureFlagEntity } from './feature-flag.entity';
 import { FeatureFlagsService } from './feature-flags.service';
 
 describe('FeatureFlagsService', () => {
   let service: FeatureFlagsService;
   let mockRepo: any;
+  let mockCache: any; // ✅ ADICIONADO
 
   beforeEach(async () => {
     mockRepo = {
@@ -13,10 +15,19 @@ describe('FeatureFlagsService', () => {
       findOne: jest.fn(),
       save: jest.fn(),
     };
+    
+    // ✅ ADICIONADO: Mock do Cache Manager para satisfazer a injeção de dependência
+    mockCache = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FeatureFlagsService,
         { provide: getRepositoryToken(FeatureFlagEntity), useValue: mockRepo },
+        { provide: CACHE_MANAGER, useValue: mockCache }, // ✅ ADICIONADO
       ],
     }).compile();
 

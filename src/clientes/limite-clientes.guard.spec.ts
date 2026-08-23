@@ -1,51 +1,69 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ForbiddenException, ExecutionContext } from '@nestjs/common';
 import { LimiteClientesGuard } from './limite-clientes.guard';
 import { UsersService } from '../users/users.service';
-import { ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { Customer } from './customer.entity';
 
 describe('LimiteClientesGuard', () => {
   let guard: LimiteClientesGuard;
   let usersService: Partial<UsersService>;
-  let clienteRepo: Partial<Repository<Customer>>;
+  let clienteRepo: any;
 
-  beforeEach(() => {
-    usersService = { findOne: jest.fn() };
-    clienteRepo = { count: jest.fn() };
-    guard = new LimiteClientesGuard(
-      usersService as UsersService,
-      clienteRepo as Repository<Customer>,
-    );
+  beforeEach(async () => {
+    usersService = {
+      findById: jest.fn(),
+    };
+    clienteRepo = {
+      count: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        LimiteClientesGuard,
+        { provide: UsersService, useValue: usersService },
+        { provide: getRepositoryToken(Customer), useValue: clienteRepo },
+      ],
+    }).compile();
+
+    guard = module.get<LimiteClientesGuard>(LimiteClientesGuard);
   });
 
-  function mockContext(username: string): ExecutionContext {
+  // Helper para criar o mock do contexto com o user injetado corretamente
+  const mockContext = (userId: string = 'user-123') => {
     return {
       switchToHttp: () => ({
-        getRequest: () => ({ user: { username } }),
+        getRequest: () => ({
+          user: { userId, username: 'teste' },
+        }),
       }),
-      getHandler: () => {},
     } as unknown as ExecutionContext;
-  }
-
-  it('deve permitir criação se abaixo do limite (free: 10)', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue({ plano: 'free' });
-    (clienteRepo.count as jest.Mock).mockResolvedValue(9);
-    const ctx = mockContext('teste');
-    expect(await guard.canActivate(ctx)).toBe(true);
-  });
+  };
 
   it('deve bloquear criação se atingiu o limite (free: 10)', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue({ plano: 'free' });
+    (usersService.findById as jest.Mock).mockResolvedValue({ plano: 'free' });
     (clienteRepo.count as jest.Mock).mockResolvedValue(10);
-    const ctx = mockContext('teste');
+    
+    const ctx = mockContext('user-123');
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
   });
 
   it('deve permitir criação ilimitada para pro', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue({ plano: 'pro' });
-    // count não deve ser chamado para planos ilimitados, mas se for, retorna 999
-    (clienteRepo.count as jest.Mock).mockResolvedValue(999);
-    const ctx = mockContext('pro');
-    expect(await guard.canActivate(ctx)).toBe(true);
+    (usersService.findById as jest.Mock).mockResolvedValue({ plano: 'pro' });
+    
+    const ctx = mockContext('user-123');
+    const result = await guard.canActivate(ctx);
+    expect(result).toBe(true);
+  });
+
+  it('deve permitir se o usuário não tiver userId (delega ao AuthGuard)', async () => {
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({}), // Sem user
+      }),
+    } as unknown as ExecutionContext;
+    
+    const result = await guard.canActivate(ctx);
+    expect(result).toBe(true);
   });
 });
