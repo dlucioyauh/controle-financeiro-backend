@@ -13,17 +13,18 @@ describe('DespesasService', () => {
       save: jest.fn(),
       delete: jest.fn(),
       findOne: jest.fn(),
-    } as any;
-    service = new DespesasService(mockRepository);
+    } as unknown as jest.Mocked<Repository<DespesaEntity>>;
+    
+    service = new DespesasService(mockRepository as unknown as any);
   });
 
   describe('getTotais', () => {
     it('deve calcular totais para despesas da empresa (pessoal=false, tipo=despesa)', async () => {
       const mockDespesas = [
-        { valor: 100, tipo: 'despesa', pessoal: false },
-        { valor: 50, tipo: 'despesa', pessoal: false },
+        { valor: 100, tipo: 'despesa', pessoal: false } as DespesaEntity,
+        { valor: 50, tipo: 'despesa', pessoal: false } as DespesaEntity,
       ];
-      mockRepository.find.mockResolvedValue(mockDespesas as any);
+      mockRepository.find.mockResolvedValue(mockDespesas);
 
       const result = await service.getTotais('user123', false, 'despesa');
 
@@ -34,8 +35,8 @@ describe('DespesasService', () => {
     });
 
     it('deve calcular totais para despesas pessoais (pessoal=true, tipo=despesa)', async () => {
-      const mockDespesas = [{ valor: 30, tipo: 'despesa', pessoal: true }];
-      mockRepository.find.mockResolvedValue(mockDespesas as any);
+      const mockDespesas = [{ valor: 30, tipo: 'despesa', pessoal: true } as DespesaEntity];
+      mockRepository.find.mockResolvedValue(mockDespesas);
 
       const result = await service.getTotais('user123', true, 'despesa');
 
@@ -47,10 +48,10 @@ describe('DespesasService', () => {
 
     it('deve calcular totais para receitas pessoais (pessoal=true, tipo=receita)', async () => {
       const mockReceitas = [
-        { valor: 200, tipo: 'receita', pessoal: true },
-        { valor: 100, tipo: 'receita', pessoal: true },
+        { valor: 200, tipo: 'receita', pessoal: true } as DespesaEntity,
+        { valor: 100, tipo: 'receita', pessoal: true } as DespesaEntity,
       ];
-      mockRepository.find.mockResolvedValue(mockReceitas as any);
+      mockRepository.find.mockResolvedValue(mockReceitas);
 
       const result = await service.getTotais('user123', true, 'receita');
 
