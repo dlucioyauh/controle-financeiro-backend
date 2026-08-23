@@ -15,7 +15,7 @@ export class DespesasService {
     valor: number;
     data: string;
     categoria?: string;
-    usuario?: string;
+    userId: string; // ✅ Padronizado para userId (LGPD)
     pessoal?: boolean;
     tipo?: string;
   }): Promise<DespesaEntity> {
@@ -23,41 +23,45 @@ export class DespesasService {
     return this.despesaRepository.save(despesa);
   }
 
-  // Empresariais (apenas despesas)
-  async listarPorUsuario(usuario: string): Promise<DespesaEntity[]> {
+  // ✅ Método unificado e flexível para listagem com filtros opcionais
+  async listar(userId: string, pessoal?: boolean, tipo?: string): Promise<DespesaEntity[]> {
+    const where: any = { userId };
+    
+    if (pessoal !== undefined) {
+      where.pessoal = pessoal;
+    }
+    if (tipo) {
+      where.tipo = tipo;
+    }
+
     return this.despesaRepository.find({
-      where: { usuario, pessoal: false, tipo: 'despesa' },
+      where,
       order: { data: 'DESC' },
     });
   }
 
-  // Pessoais (despesas)
-  async listarPessoais(usuario: string): Promise<DespesaEntity[]> {
-    return this.despesaRepository.find({
-      where: { usuario, pessoal: true, tipo: 'despesa' },
-      order: { data: 'DESC' },
-    });
+  // Métodos legados mantidos para compatibilidade, mas agora usam o método unificado
+  async listarPorUsuario(userId: string): Promise<DespesaEntity[]> {
+    return this.listar(userId, false, 'despesa');
   }
 
-  // Receitas pessoais (entradas)
-  async listarReceitasPessoais(usuario: string): Promise<DespesaEntity[]> {
-    return this.despesaRepository.find({
-      where: { usuario, pessoal: true, tipo: 'receita' },
-      order: { data: 'DESC' },
-    });
+  async listarPessoais(userId: string): Promise<DespesaEntity[]> {
+    return this.listar(userId, true, 'despesa');
   }
 
-  // Todas as pessoais (despesas + receitas) para cálculos
-  async listarTodasPessoais(usuario: string): Promise<DespesaEntity[]> {
-    return this.despesaRepository.find({
-      where: { usuario, pessoal: true },
-      order: { data: 'DESC' },
-    });
+  async listarReceitasPessoais(userId: string): Promise<DespesaEntity[]> {
+    return this.listar(userId, true, 'receita');
+  }
+
+  async listarTodasPessoais(userId: string): Promise<DespesaEntity[]> {
+    return this.listar(userId, true);
   }
 
   async buscarPorId(id: string): Promise<DespesaEntity> {
     const despesa = await this.despesaRepository.findOne({ where: { id } });
-    if (!despesa) throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
+    if (!despesa) {
+      throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
+    }
     return despesa;
   }
 
@@ -79,11 +83,13 @@ export class DespesasService {
 
   async remover(id: string): Promise<void> {
     const resultado = await this.despesaRepository.delete(id);
-    if (resultado.affected === 0) throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
+    if (resultado.affected === 0) {
+      throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
+    }
   }
 
-  async getTotais(usuario: string, pessoal: boolean = false, tipo?: 'despesa' | 'receita'): Promise<{ total: number; quantidade: number }> {
-    const where: any = { usuario };
+  async getTotais(userId: string, pessoal: boolean = false, tipo?: 'despesa' | 'receita'): Promise<{ total: number; quantidade: number }> {
+    const where: any = { userId };
     if (pessoal !== undefined) where.pessoal = pessoal;
     if (tipo) where.tipo = tipo;
 
