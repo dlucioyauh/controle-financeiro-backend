@@ -9,7 +9,8 @@ export class MailService {
 
   constructor(private config: ConfigService) {
     this.apiKey = this.config.get('RESEND_API_KEY') || '';
-    this.from = this.config.get('MAIL_FROM') || 'onboarding@resend.dev';
+    // IMPORTANTE: Este e-mail DEVE estar verificado no painel do Resend (DNS no Cloudflare)
+    this.from = this.config.get('MAIL_FROM') || 'contato@ionfinance.com.br';
 
     if (!this.apiKey) {
       this.logger.warn('RESEND_API_KEY não configurada. E-mails não serão enviados.');
@@ -48,12 +49,12 @@ export class MailService {
   }
 
   async sendWelcomeEmail(to: string, name: string) {
-    const nomeExibicao = name || 'usuário';
+    const nomeExibicao = name ? name.split(' ')[0] : 'usuário';
     const html = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Bem-vindo, ${nomeExibicao}!</h1>
-        <p>Seu cadastro foi realizado com sucesso.</p>
-        <p>Agora você já pode acessar sua plataforma financeira e gerenciar suas receitas, despesas e muito mais.</p>
+      <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #020617; color: #e2e8f0;">
+        <h1 style="color: #22d3ee;">Bem-vindo, ${nomeExibicao}!</h1>
+        <p>Seu cadastro no IonFinance foi realizado com sucesso.</p>
+        <p>Agora você já pode acessar sua plataforma e gerenciar suas finanças com a tecnologia IONKOD.</p>
         <br />
         <p><strong>Equipe IonFinance</strong></p>
       </div>
@@ -61,32 +62,112 @@ export class MailService {
     await this.sendEmail(to, `Bem-vindo ao IonFinance, ${nomeExibicao}! 🚀`, html);
   }
 
-  async sendSubscriptionConfirmation(to: string, name: string, plano: string) {
-    const nomeExibicao = name || 'usuário';
+  async sendSubscriptionConfirmation(to: string, name: string, plano: string, valor?: string) {
+    const nomeExibicao = name ? name.split(' ')[0] : 'usuário';
+    const valorFormatado = valor ? `no valor de ${valor}` : '';
+
     const html = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Assinatura confirmada!</h1>
-        <p>Olá, ${nomeExibicao}.</p>
-        <p>Você assinou o plano <strong>${plano}</strong> com sucesso.</p>
-        <p>Agora você tem acesso a todos os recursos do seu plano.</p>
-        <br />
-        <p><strong>Equipe IonFinance</strong></p>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Assinatura Confirmada - IonFinance</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #020617; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #020617; padding: 40px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #0f172a; border-radius: 12px; border: 1px solid #1e293b; overflow: hidden;">
+                <!-- Header com Identidade IONKOD -->
+                <tr>
+                  <td align="center" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); padding: 30px 20px;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">IonFinance</h1>
+                    <p style="color: #cffafe; margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">by IONKOD</p>
+                  </td>
+                </tr>
+                <!-- Corpo do E-mail -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 20px;">Olá, ${nomeExibicao}! 🚀</h2>
+                    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                      Sua assinatura foi confirmada com sucesso! Agora você está no controle total das suas finanças com o plano <strong style="color: #22d3ee;">${plano}</strong> ${valorFormatado}.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                      Todos os recursos do seu novo plano (precificação inteligente, relatórios avançados e automações) já estão liberados no seu painel.
+                    </p>
+                    <!-- Botão de Ação (CTA) -->
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <a href="https://ionfinance.com.br/login" style="display: inline-block; background-color: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s;">
+                            Acessar Meu Painel
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Rodapé Profissional -->
+                <tr>
+                  <td style="background-color: #020617; padding: 20px 30px; border-top: 1px solid #1e293b; text-align: center;">
+                    <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0;">
+                      Precisa de ajuda? Responda este e-mail ou fale conosco pelo <a href="https://wa.me/5548996126202" style="color: #22d3ee; text-decoration: none;">WhatsApp</a>.
+                    </p>
+                    <p style="color: #475569; font-size: 11px; margin: 0;">
+                      © ${new Date().getFullYear()} IONKOD. Todos os direitos reservados.<br>
+                      IonFinance - Tecnologia inteligente para o seu negócio.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
-    await this.sendEmail(to, `Assinatura ${plano} confirmada! 🎉`, html);
+    
+    await this.sendEmail(to, `Assinatura do plano ${plano} confirmada! 🎉`, html);
   }
 
   async sendSetupConfirmation(to: string, name: string) {
-    const nomeExibicao = name || 'usuário';
+    const nomeExibicao = name ? name.split(' ')[0] : 'usuário';
     const html = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Setup Inicial confirmado!</h1>
-        <p>Olá, ${nomeExibicao}.</p>
-        <p>Recebemos o pagamento do Setup Inicial.</p>
-        <p>Em breve nossa equipe entrará em contato para configurar seus produtos, receitas e clientes, além de agendar o treinamento.</p>
-        <br />
-        <p><strong>Equipe IonFinance</strong></p>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 0; background-color: #020617; font-family: Arial, sans-serif; color: #e2e8f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #020617; padding: 40px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #0f172a; border-radius: 12px; border: 1px solid #1e293b;">
+                <tr>
+                  <td align="center" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); padding: 30px 20px;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px;">IonFinance</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="color: #ffffff; margin: 0 0 20px 0;">Olá, ${nomeExibicao}! 🚀</h2>
+                    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6;">
+                      Recebemos o pagamento do seu <strong style="color: #22d3ee;">Setup Inicial</strong>.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin-top: 15px;">
+                      Em breve nossa equipe entrará em contato para configurar seus produtos, receitas e clientes, além de agendar seu treinamento personalizado.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #020617; padding: 20px 30px; border-top: 1px solid #1e293b; text-align: center;">
+                    <p style="color: #475569; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} IONKOD. Todos os direitos reservados.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
     await this.sendEmail(to, 'Setup Inicial confirmado! 🚀', html);
   }
