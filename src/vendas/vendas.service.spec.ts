@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { VendasService } from './vendas.service';
 import { UsersService } from '../users/users.service';
 import { ClientesService } from '../clientes/clientes.service';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { VendaEntity } from './venda.entity';
-import { Repository } from 'typeorm';
 
 describe('VendasService - calcularFrete', () => {
   let service: VendasService;
@@ -13,7 +13,6 @@ describe('VendasService - calcularFrete', () => {
   let clientesService: Partial<ClientesService>;
   let configService: Partial<ConfigService>;
 
-  // Mock da resposta da API de roteirização
   const mockRouteResponse = {
     routes: [
       {
@@ -26,8 +25,9 @@ describe('VendasService - calcularFrete', () => {
   };
 
   beforeEach(async () => {
+    // CORREÇÃO: findById em vez de findOne, para bater com o código real
     usersService = {
-      findOne: jest.fn(),
+      findById: jest.fn(),
     };
     clientesService = {
       buscarPorId: jest.fn(),
@@ -39,7 +39,6 @@ describe('VendasService - calcularFrete', () => {
       }),
     };
 
-    // Mock global fetch
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue(mockRouteResponse),
@@ -63,46 +62,55 @@ describe('VendasService - calcularFrete', () => {
   });
 
   it('deve calcular frete corretamente (distância × taxa)', async () => {
-    const usuario = 'teste';
-    const clienteId = 'uuid-cliente';
+    const userId = 'mock-user-id';
+    const clienteId = 'mock-client-id';
 
-    // Mock do usuário com endereço de origem e taxa
-    (usersService.findOne as jest.Mock).mockResolvedValue({
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: userId,
       latitudeOrigem: -27.5954,
       longitudeOrigem: -48.5480,
       taxaFreteKm: 0.80,
     });
 
-    // Mock do cliente com coordenadas
     (clientesService.buscarPorId as jest.Mock).mockResolvedValue({
       id: clienteId,
       latitude: -27.6000,
       longitude: -48.5400,
     });
 
-    const result = await service.calcularFrete(usuario, clienteId);
+    const result = await service.calcularFrete(userId, clienteId);
 
     expect(result).toEqual({
       distanciaKm: '15.23',
       tempoMinutos: 20,
-      valorFrete: (15.23 * 0.80).toFixed(2),
+      valorFrete: '12.18', // 15.23 * 0.80
       taxaFreteKm: 0.80,
     });
   });
 
   it('deve lançar erro se endereço de origem não configurado', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue({
+    const userId = 'mock-user-id';
+    
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: userId,
       latitudeOrigem: null,
       longitudeOrigem: null,
     });
 
     await expect(
-      service.calcularFrete('teste', 'uuid-cliente'),
+      service.calcularFrete(userId, 'mock-client-id'),
+    ).rejects.toThrow(NotFoundException);
+    
+    await expect(
+      service.calcularFrete(userId, 'mock-client-id'),
     ).rejects.toThrow('Endereço de origem não configurado');
   });
 
   it('deve lançar erro se cliente não tem coordenadas', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue({
+    const userId = 'mock-user-id';
+
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: userId,
       latitudeOrigem: -27.5954,
       longitudeOrigem: -48.5480,
     });
@@ -112,22 +120,29 @@ describe('VendasService - calcularFrete', () => {
     });
 
     await expect(
-      service.calcularFrete('teste', 'uuid-cliente'),
+      service.calcularFrete(userId, 'mock-client-id'),
+    ).rejects.toThrow(NotFoundException);
+
+    await expect(
+      service.calcularFrete(userId, 'mock-client-id'),
     ).rejects.toThrow('Endereço do cliente não possui coordenadas');
   });
 
   it('deve usar a taxa de frete padrão (0.80) se não configurada', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue({
+    const userId = 'mock-user-id';
+
+    (usersService.findById as jest.Mock).mockResolvedValue({
+      id: userId,
       latitudeOrigem: -27.5954,
       longitudeOrigem: -48.5480,
-      taxaFreteKm: undefined, // não configurada
+      taxaFreteKm: undefined,
     });
     (clientesService.buscarPorId as jest.Mock).mockResolvedValue({
       latitude: -27.6000,
       longitude: -48.5400,
     });
 
-    const result = await service.calcularFrete('teste', 'uuid-cliente');
-    expect(result.taxaFreteKm).toBe(0.80); // valor padrão do código
+    const result = await service.calcularFrete(userId, 'mock-client-id');
+    expect(result.taxaFreteKm).toBe(0.80);
   });
 });

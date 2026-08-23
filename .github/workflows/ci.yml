@@ -1,0 +1,42 @@
+name: CI - Backend IonFinance
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar Linter (ESLint)
+        run: npm run lint
+
+      - name: Executar Testes (Jest)
+        run: npm run test
+        env:
+          STRIPE_SECRET_KEY: sk_test_mock
+          STRIPE_WEBHOOK_SECRET: whsec_mock
+          STRIPE_PRICE_BASIC: price_basic
+          STRIPE_PRICE_PRO: price_pro
+          STRIPE_PRICE_PREMIUM: price_premium
+          ORS_API_KEY: mock_ors_key
+          DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
