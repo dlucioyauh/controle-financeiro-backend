@@ -28,8 +28,9 @@ describe('DespesasService', () => {
 
       const result = await service.getTotais('user123', false, 'despesa');
 
+      // ✅ CORREÇÃO: userId em vez de usuario
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { usuario: 'user123', pessoal: false, tipo: 'despesa' }
+        where: { userId: 'user123', pessoal: false, tipo: 'despesa' }
       });
       expect(result).toEqual({ total: 150, quantidade: 2 });
     });
@@ -40,8 +41,9 @@ describe('DespesasService', () => {
 
       const result = await service.getTotais('user123', true, 'despesa');
 
+      // ✅ CORREÇÃO: userId em vez de usuario
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { usuario: 'user123', pessoal: true, tipo: 'despesa' }
+        where: { userId: 'user123', pessoal: true, tipo: 'despesa' }
       });
       expect(result).toEqual({ total: 30, quantidade: 1 });
     });
@@ -55,8 +57,9 @@ describe('DespesasService', () => {
 
       const result = await service.getTotais('user123', true, 'receita');
 
+      // ✅ CORREÇÃO: userId em vez de usuario
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { usuario: 'user123', pessoal: true, tipo: 'receita' }
+        where: { userId: 'user123', pessoal: true, tipo: 'receita' }
       });
       expect(result).toEqual({ total: 300, quantidade: 2 });
     });
