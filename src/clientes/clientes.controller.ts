@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { ClientesService } from './clientes.service';
 import { Customer } from './customer.entity';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard, RequestWithUser } from '../auth/auth.guard';
 import { LimiteClientesGuard } from './limite-clientes.guard';
 import type { Request } from 'express';
 
@@ -15,20 +15,20 @@ export class ClientesController {
   @UseGuards(LimiteClientesGuard)
   @Post()
   criar(@Body() data: Partial<Customer>, @Req() req: Request) {
-    const user = req.user as { userId: string; username: string };
-    return this.clientesService.criar(data, user.userId, user.username);
+    const customReq = req as RequestWithUser;
+    return this.clientesService.criar(data, customReq.user!.userId, customReq.user!.username);
   }
 
   @Get()
   listar(@Req() req: Request) {
-    const user = req.user as { userId: string; username: string };
-    return this.clientesService.listarPorUsuario(user.userId);
+    const customReq = req as RequestWithUser;
+    return this.clientesService.listarPorUsuario(customReq.user!.userId);
   }
 
   @Get('mapa')
   listarParaMapa(@Req() req: Request) {
-    const user = req.user as { userId: string; username: string };
-    return this.clientesService.listarParaMapa(user.userId);
+    const customReq = req as RequestWithUser;
+    return this.clientesService.listarParaMapa(customReq.user!.userId);
   }
 
   @Get(':id')

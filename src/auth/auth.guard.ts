@@ -6,7 +6,23 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
+import type { Request } from 'express';
+
+export interface JwtPayload {
+  sub: string;
+  username: string;
+}
+
+// Composition em vez de Herança para evitar conflito com o tipo base do Express
+export type RequestWithUser = Omit<Request, 'cookies'> & {
+  user?: {
+    userId: string;
+    username: string;
+  };
+  cookies?: {
+    auth_token?: string;
+  };
+};
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -16,32 +32,37 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const token = this.extractToken(request);
+    
     if (!token) {
       throw new UnauthorizedException('Token não encontrado');
     }
+    
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
-      // payload tem { sub: uuid, username: string }
-      // mapeia para o formato que o controller espera
-      request['user'] = {
+      
+      request.user = {
         userId: payload.sub,
         username: payload.username,
       };
     } catch {
       throw new UnauthorizedException('Token inválido');
     }
+    
     return true;
   }
 
-  private extractToken(request: Request): string | undefined {
+  private extractToken(request: RequestWithUser): string | undefined {
     if (request.cookies?.auth_token) {
       return request.cookies.auth_token;
     }
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    const authHeader = request.headers.authorization;
+    if (!authHeader) return undefined;
+    
+    const [type, token] = authHeader.split(' ');
     return type === 'Bearer' ? token : undefined;
   }
 }

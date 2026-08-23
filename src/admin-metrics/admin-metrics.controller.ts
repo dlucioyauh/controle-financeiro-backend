@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards, Req, ForbiddenException } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard, RequestWithUser } from '../auth/auth.guard';
 import { AdminMetricsService } from './admin-metrics.service';
 import type { Request } from 'express';
 
@@ -12,8 +12,8 @@ export class AdminMetricsController {
 
   @Get('overview')
   async getOverview(@Req() req: Request) {
-    // Cast seguro e inline: satisfaz o TypeScript sem violar isolatedModules no decorador
-    const user = req.user as { userId: string; username: string } | undefined;
+    const customReq = req as RequestWithUser;
+    const user = customReq.user;
     
     if (!user || !ADMIN_USERNAMES.includes(user.username)) {
       throw new ForbiddenException('Acesso restrito ao administrador');

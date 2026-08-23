@@ -1,10 +1,8 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe, Query,
+  Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe,
 } from '@nestjs/common';
 import { DespesasService } from './despesas.service';
-import { DespesaEntity } from './despesa.entity';
-import { AuthGuard } from '../auth/auth.guard';
-import { FilterDespesasDto } from './dto/filter-despesas.dto';
+import { AuthGuard, RequestWithUser } from '../auth/auth.guard';
 import type { Request } from 'express';
 
 @Controller('despesas')
@@ -13,50 +11,30 @@ export class DespesasController {
   constructor(private readonly despesasService: DespesasService) {}
 
   @Post()
-  criar(
-    @Body() data: any,
-    @Req() req: Request,
-  ): Promise<DespesaEntity> {
-    const user = (req as any).user;
-    return this.despesasService.criar({ ...data, userId: user.userId, usuario: user.username });
+  criar(@Body() data: Record<string, unknown>, @Req() req: Request) {
+    const customReq = req as RequestWithUser;
+    // Injeta o userId no payload, pois o serviço espera apenas 1 argumento (o DTO)
+    return this.despesasService.criar({ ...data, userId: customReq.user!.userId } as any);
   }
 
   @Get()
-  listar(@Req() req: Request): Promise<DespesaEntity[]> {
-    const user = (req as any).user;
-    return this.despesasService.listarPorUsuario(user.userId);
-  }
-
-  @Get('pessoais')
-  listarPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
-    const user = (req as any).user;
-    return this.despesasService.listarPessoais(user.userId);
-  }
-
-  @Get('receitas-pessoais')
-  listarReceitasPessoais(@Req() req: Request): Promise<DespesaEntity[]> {
-    const user = (req as any).user;
-    return this.despesasService.listarReceitasPessoais(user.userId);
-  }
-
-  @Get('totais')
-  getTotais(@Req() req: Request, @Query() filter: FilterDespesasDto) {
-    const user = (req as any).user;
-    return this.despesasService.getTotais(user.userId, filter.pessoal, filter.tipo);
+  listar(@Req() req: Request) {
+    const customReq = req as RequestWithUser;
+    return this.despesasService.listarPorUsuario(customReq.user!.userId);
   }
 
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string): Promise<DespesaEntity> {
+  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
     return this.despesasService.buscarPorId(id);
   }
 
   @Patch(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: any) {
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: Record<string, unknown>) {
     return this.despesasService.atualizar(id, data);
   }
 
   @Delete(':id')
-  remover(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  remover(@Param('id', ParseUUIDPipe) id: string) {
     return this.despesasService.remover(id);
   }
 }

@@ -3,11 +3,11 @@ import { UsersService } from '../users/users.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Customer } from './customer.entity';
-import type { Request } from 'express';
+import { RequestWithUser } from '../auth/auth.guard';
 
 @Injectable()
 export class LimiteClientesGuard implements CanActivate {
-  private limites = {
+  private limites: Record<string, number> = {
     free: 10,
     basic: 50,
     pro: Infinity,
@@ -20,16 +20,16 @@ export class LimiteClientesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request & { user?: { userId: string; username: string } }>();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
     
     if (!user || !user.userId) {
-      return true; // Deixa o AuthGuard lidar com a rejeição se não houver usuário
+      return true;
     }
 
     const userData = await this.usersService.findById(user.userId);
     const userPlan = userData?.plano?.toLowerCase() || 'free';
-    const limite = this.limites[userPlan as keyof typeof this.limites] ?? this.limites.free;
+    const limite = this.limites[userPlan] ?? this.limites.free;
     
     if (limite === Infinity) return true;
 

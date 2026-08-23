@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UsersService } from '../users/users.service';
-import type { Request } from 'express';
+import { RequestWithUser } from './auth.guard';
 
 @Injectable()
 export class PlanoGuard implements CanActivate {
@@ -11,8 +11,7 @@ export class PlanoGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Tipagem via genérico do NestJS, evitando decoradores com tipos customizados
-    const request = context.switchToHttp().getRequest<Request & { user?: { userId: string; username: string } }>();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
     if (!user || !user.userId) {
