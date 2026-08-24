@@ -1,23 +1,37 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReceitaEntity } from './receita.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ReceitasService {
   constructor(
     @InjectRepository(ReceitaEntity)
     private receitaRepository: Repository<ReceitaEntity>,
+    private usersService: UsersService,
   ) {}
 
-  async criar(data: Partial<ReceitaEntity>): Promise<ReceitaEntity> {
+  async criar(data: Partial<ReceitaEntity> & { userId: string }): Promise<ReceitaEntity> {
+    // 1. Verificar limite para usuários do plano Free
+    const user = await this.usersService.findById(data.userId);
+    const userPlan = user?.plano?.toLowerCase() || 'free';
+
+    if (userPlan === 'free') {
+      const count = await this.receitaRepository.count({ where: { userId: data.userId } });
+      if (count >= 5) {
+        throw new ForbiddenException('Limite de 5 produtos/receitas atingido no plano Free. Faça upgrade para adicionar mais.');
+      }
+    }
+
     const receita = this.receitaRepository.create(data);
     return this.receitaRepository.save(receita);
   }
 
-  async listarPorUsuario(usuario: string): Promise<ReceitaEntity[]> {
+  // ✅ CORREÇÃO LGPD: Usar userId em vez de username
+  async listar(userId: string): Promise<ReceitaEntity[]> {
     return this.receitaRepository.find({
-      where: { usuario },
+      where: { userId },
       order: { nome: 'ASC' },
     });
   }

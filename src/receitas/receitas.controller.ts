@@ -2,9 +2,7 @@ import {
   Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ReceitasService } from './receitas.service';
-import { ReceitaEntity } from './receita.entity';
-import { AuthGuard } from '../auth/auth.guard';
-import { LimiteReceitasGuard } from './limite-receitas.guard';
+import { AuthGuard, RequestWithUser } from '../auth/auth.guard';
 import type { Request } from 'express';
 
 @Controller('receitas')
@@ -12,18 +10,17 @@ import type { Request } from 'express';
 export class ReceitasController {
   constructor(private readonly receitasService: ReceitasService) {}
 
-  // Limite de criação por plano
-  @UseGuards(LimiteReceitasGuard)
   @Post()
-  criar(@Body() data: Partial<ReceitaEntity>, @Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.receitasService.criar({ ...data, usuario });
+  criar(@Body() data: Record<string, unknown>, @Req() req: Request) {
+    const customReq = req as RequestWithUser;
+    // Injeta o userId no payload, garantindo isolamento e passando na validação do serviço
+    return this.receitasService.criar({ ...data, userId: customReq.user!.userId } as any);
   }
 
   @Get()
   listar(@Req() req: Request) {
-    const usuario = (req as any).user?.username;
-    return this.receitasService.listarPorUsuario(usuario);
+    const customReq = req as RequestWithUser;
+    return this.receitasService.listar(customReq.user!.userId);
   }
 
   @Get(':id')
@@ -32,7 +29,7 @@ export class ReceitasController {
   }
 
   @Patch(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: Partial<ReceitaEntity>) {
+  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: Record<string, unknown>) {
     return this.receitasService.atualizar(id, data);
   }
 
