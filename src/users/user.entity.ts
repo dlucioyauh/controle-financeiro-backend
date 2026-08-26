@@ -29,14 +29,12 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   telefone!: string | null;
 
-  // WhatsApp
   @Column({ type: 'varchar', nullable: true })
   whatsappNumber!: string | null;
 
   @Column({ type: 'boolean', default: false })
   whatsappEnabled!: boolean;
 
-  // Endereço de origem
   @Column({ type: 'varchar', nullable: true })
   enderecoOrigem!: string | null;
 
@@ -85,7 +83,6 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   stripeSubscriptionStatus!: string | null;
 
-  // NOVO: indica se o setup inicial foi pago
   @Column({ type: 'boolean', default: false })
   setupPaid!: boolean;
 
@@ -98,6 +95,7 @@ export class UserEntity {
   @UpdateDateColumn()
   updatedAt!: Date;
 
+  // ✅ NOVOS CAMPOS PARA RECUPERAÇÃO DE SENHA
   @Column({ nullable: true })
   resetPasswordToken?: string;
 

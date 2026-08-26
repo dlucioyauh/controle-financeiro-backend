@@ -71,7 +71,6 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.usersService.findByEmail(email);
     
-    // Retorna sucesso genérico para evitar enumeração de e-mails (segurança)
     const successMessage = { message: 'Se este e-mail estiver cadastrado, você receberá um link de recuperação.' };
     
     if (!user || !user.email) {

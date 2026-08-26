@@ -9,7 +9,6 @@ export class MailService {
 
   constructor(private config: ConfigService) {
     this.apiKey = this.config.get('RESEND_API_KEY') || '';
-    // IMPORTANTE: Este e-mail DEVE estar verificado no painel do Resend (DNS no Cloudflare)
     this.from = this.config.get('MAIL_FROM') || 'contato@ionfinance.com.br';
 
     if (!this.apiKey) {
@@ -168,7 +167,7 @@ export class MailService {
     await this.sendEmail(to, 'Setup Inicial confirmado! 🚀', html);
   }
 
-  // ✅ NOVO: E-mail de Recuperação de Senha (Com o mesmo padrão visual IONKOD)
+  // ✅ NOVO: E-mail de Recuperação de Senha
   async sendPasswordReset(to: string, name: string, resetUrl: string) {
     const nomeExibicao = name ? name.split(' ')[0] : 'usuário';
     const html = `

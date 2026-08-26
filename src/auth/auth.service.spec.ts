@@ -1,147 +1,173 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { JwtService } from '@nestjs/jwt';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
+
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
 
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: Partial<UsersService>;
-  let jwtService: Partial<JwtService>;
   let mailService: Partial<MailService>;
+  let jwtService: Partial<JwtService>;
+  let configService: Partial<ConfigService>;
 
   beforeEach(async () => {
     usersService = {
       findOne: jest.fn(),
       create: jest.fn(),
-      updatePerfil: jest.fn(),   // ← novo mock
+      updatePerfil: jest.fn(),
+      findByEmail: jest.fn(),
+      findByResetToken: jest.fn(),
     };
-    jwtService = {
-      signAsync: jest.fn().mockResolvedValue('token_fake'),
-      sign: jest.fn().mockReturnValue('token_fake'),
-    };
+
     mailService = {
       sendWelcomeEmail: jest.fn(),
+      sendPasswordReset: jest.fn(),
+    };
+
+    jwtService = {
+      signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
+      sign: jest.fn().mockReturnValue('mock-jwt-token'),
+    };
+
+    configService = {
+      get: jest.fn((key: string) => {
+        if (key === 'FRONTEND_URL') return 'http://localhost:5173';
+        return null;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
-        { provide: JwtService, useValue: jwtService },
         { provide: MailService, useValue: mailService },
+        { provide: JwtService, useValue: jwtService },
+        { provide: ConfigService, useValue: configService }, // ✅ CORREÇÃO AQUI
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
   });
 
-  // ─── Testes de REGISTRO ────────────────────────
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-  it('deve registrar um usuário e retornar token', async () => {
-    (usersService.create as jest.Mock).mockResolvedValue({
-      id: '1',
-      username: 'teste',
-      email: 'teste@teste.com',
-      plano: 'free',
+  describe('register', () => {
+    it('deve registrar um usuário e retornar token', async () => {
+      const userData = { username: 'testuser', password: 'password123', email: 'test@test.com' };
+      const createdUser = { id: '1', ...userData, plano: 'free' };
+      
+      (usersService.create as jest.Mock).mockResolvedValue(createdUser);
+      (usersService.updatePerfil as jest.Mock).mockResolvedValue(createdUser);
+
+      const result = await service.register(userData);
+
+      expect(usersService.create).toHaveBeenCalledWith(userData);
+      expect(usersService.updatePerfil).toHaveBeenCalled();
+      expect(result).toHaveProperty('access_token', 'mock-jwt-token');
     });
-    const result = await service.register({ username: 'teste', password: '123456' });
-    expect(result).toHaveProperty('access_token');
-  });
 
-  it('deve iniciar o trial de 7 dias ao registrar usuário free', async () => {
-    const fakeUser = {
-      id: '2',
-      username: 'novo',
-      email: 'novo@teste.com',
-      plano: 'free',
-    };
-    (usersService.create as jest.Mock).mockResolvedValue(fakeUser);
-    await service.register({ username: 'novo', password: '123456' });
+    it('deve iniciar o trial de 7 dias ao registrar usuário free', async () => {
+      const userData = { username: 'testuser', password: 'password123' };
+      const createdUser = { id: '1', ...userData, plano: 'free' };
+      
+      (usersService.create as jest.Mock).mockResolvedValue(createdUser);
+      (usersService.updatePerfil as jest.Mock).mockResolvedValue(createdUser);
 
-    // Verifica se updatePerfil foi chamado com um trialEndsAt definido
-    expect(usersService.updatePerfil).toHaveBeenCalledWith(
-      '2',
-      expect.objectContaining({
-        trialEndsAt: expect.any(Date),
-      }),
-    );
-  });
+      await service.register(userData);
 
-  it('NÃO deve quebrar o registro se o envio de e‑mail falhar', async () => {
-    const fakeUser = {
-      id: '3',
-      username: 'sememail',
-      email: 'sememail@teste.com',
-      plano: 'free',
-    };
-    (usersService.create as jest.Mock).mockResolvedValue(fakeUser);
-    // Simula um erro no envio de e‑mail
-    (mailService.sendWelcomeEmail as jest.Mock).mockRejectedValue(new Error('SMTP error'));
-
-    const result = await service.register({ username: 'sememail', password: '123456' });
-    expect(result).toHaveProperty('access_token');
-    // O e‑mail foi tentado, mesmo falhando
-    expect(mailService.sendWelcomeEmail).toHaveBeenCalled();
-  });
-
-  it('deve notificar o dono (dlucio) sobre novo cadastro', async () => {
-    const fakeUser = {
-      id: '4',
-      username: 'notifica',
-      email: 'notifica@teste.com',
-      plano: 'free',
-    };
-    (usersService.create as jest.Mock).mockResolvedValue(fakeUser);
-    await service.register({ username: 'notifica', password: '123456' });
-
-    // Verifica se o e‑mail para o dono foi chamado
-    expect(mailService.sendWelcomeEmail).toHaveBeenCalledWith(
-      'dlucio.douglas@gmail.com',
-      expect.stringContaining('notifica'),
-    );
-  });
-
-  // ─── Testes de LOGIN ──────────────────────────
-
-  it('deve validar senha no login', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    (usersService.findOne as jest.Mock).mockResolvedValue({
-      id: '1',
-      username: 'teste',
-      password: hash,
+      expect(usersService.updatePerfil).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({ trialEndsAt: expect.any(Date) })
+      );
     });
-    const result = await service.signIn('teste', '123456');
-    expect(result).toHaveProperty('access_token');
-  });
 
-  it('deve lançar erro se senha incorreta', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    (usersService.findOne as jest.Mock).mockResolvedValue({
-      id: '1',
-      username: 'teste',
-      password: hash,
+    it('NÃO deve quebrar o registro se o envio de e‑mail falhar', async () => {
+      const userData = { username: 'testuser', password: 'password123', email: 'test@test.com' };
+      const createdUser = { id: '1', ...userData, plano: 'free' };
+      
+      (usersService.create as jest.Mock).mockResolvedValue(createdUser);
+      (usersService.updatePerfil as jest.Mock).mockResolvedValue(createdUser);
+      (mailService.sendWelcomeEmail as jest.Mock).mockRejectedValue(new Error('SMTP error'));
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const result = await service.register(userData);
+
+      expect(result).toHaveProperty('access_token', 'mock-jwt-token');
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      
+      consoleWarnSpy.mockRestore();
     });
-    await expect(service.signIn('teste', 'senha_errada')).rejects.toThrow();
-  });
 
-  it('deve lançar erro se usuário não existe', async () => {
-    (usersService.findOne as jest.Mock).mockResolvedValue(null);
-    await expect(service.signIn('fantasma', '123456')).rejects.toThrow();
-  });
+    it('deve notificar o dono (dlucio) sobre novo cadastro', async () => {
+      const userData = { username: 'testuser', password: 'password123', email: 'test@test.com' };
+      const createdUser = { id: '1', ...userData, plano: 'free' };
+      
+      (usersService.create as jest.Mock).mockResolvedValue(createdUser);
+      (usersService.updatePerfil as jest.Mock).mockResolvedValue(createdUser);
 
-  // ─── Teste de LOGIN com trial expirado (comportamento futuro) ──
-  it('deve permitir login mesmo após trial expirado (a restrição é via guard)', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    (usersService.findOne as jest.Mock).mockResolvedValue({
-      id: '5',
-      username: 'expirado',
-      password: hash,
-      plano: 'free',
-      trialEndsAt: new Date('2020-01-01'), // data passada
+      await service.register(userData);
+
+      expect(mailService.sendWelcomeEmail).toHaveBeenCalledWith(
+        'dlucio.douglas@gmail.com',
+        expect.stringContaining('Novo cadastro: testuser')
+      );
     });
-    const result = await service.signIn('expirado', '123456');
-    expect(result).toHaveProperty('access_token');
+  });
+
+  describe('signIn', () => {
+    it('deve validar senha no login', async () => {
+      const user = { id: '1', username: 'testuser', password: 'hashed_password' };
+      (usersService.findOne as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.signIn('testuser', 'password123');
+
+      expect(result).toHaveProperty('access_token', 'mock-jwt-token');
+    });
+
+    it('deve lançar erro se senha incorreta', async () => {
+      const user = { id: '1', username: 'testuser', password: 'hashed_password' };
+      (usersService.findOne as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.signIn('testuser', 'wrongpassword')).rejects.toThrow(
+        UnauthorizedException
+      );
+    });
+
+    it('deve lançar erro se usuário não existe', async () => {
+      (usersService.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.signIn('nonexistent', 'password123')).rejects.toThrow(
+        UnauthorizedException
+      );
+    });
+
+    it('deve permitir login mesmo após trial expirado (a restrição é via guard)', async () => {
+      const user = { 
+        id: '1', 
+        username: 'testuser', 
+        password: 'hashed_password',
+        trialEndsAt: new Date('2020-01-01')
+      };
+      (usersService.findOne as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.signIn('testuser', 'password123');
+
+      expect(result).toHaveProperty('access_token', 'mock-jwt-token');
+    });
   });
 });
