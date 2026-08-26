@@ -79,14 +79,12 @@ export class MailService {
           <tr>
             <td align="center">
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #0f172a; border-radius: 12px; border: 1px solid #1e293b; overflow: hidden;">
-                <!-- Header com Identidade IONKOD -->
                 <tr>
                   <td align="center" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); padding: 30px 20px;">
                     <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">IonFinance</h1>
                     <p style="color: #cffafe; margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">by IONKOD</p>
                   </td>
                 </tr>
-                <!-- Corpo do E-mail -->
                 <tr>
                   <td style="padding: 40px 30px;">
                     <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 20px;">Olá, ${nomeExibicao}! 🚀</h2>
@@ -94,9 +92,8 @@ export class MailService {
                       Sua assinatura foi confirmada com sucesso! Agora você está no controle total das suas finanças com o plano <strong style="color: #22d3ee;">${plano}</strong> ${valorFormatado}.
                     </p>
                     <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                      Todos os recursos do seu novo plano (precificação inteligente, relatórios avançados e automações) já estão liberados no seu painel.
+                      Todos os recursos do seu novo plano já estão liberados no seu painel.
                     </p>
-                    <!-- Botão de Ação (CTA) -->
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center">
@@ -108,7 +105,6 @@ export class MailService {
                     </table>
                   </td>
                 </tr>
-                <!-- Rodapé Profissional -->
                 <tr>
                   <td style="background-color: #020617; padding: 20px 30px; border-top: 1px solid #1e293b; text-align: center;">
                     <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0;">
@@ -170,5 +166,69 @@ export class MailService {
       </html>
     `;
     await this.sendEmail(to, 'Setup Inicial confirmado! 🚀', html);
+  }
+
+  // ✅ NOVO: E-mail de Recuperação de Senha (Com o mesmo padrão visual IONKOD)
+  async sendPasswordReset(to: string, name: string, resetUrl: string) {
+    const nomeExibicao = name ? name.split(' ')[0] : 'usuário';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Redefinição de Senha - IonFinance</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #020617; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #020617; padding: 40px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #0f172a; border-radius: 12px; border: 1px solid #1e293b; overflow: hidden;">
+                <tr>
+                  <td align="center" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); padding: 30px 20px;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">IonFinance</h1>
+                    <p style="color: #cffafe; margin: 8px 0 0 0; font-size: 14px;">by IONKOD</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 20px;">Olá, ${nomeExibicao}!</h2>
+                    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                      Recebemos uma solicitação para redefinir sua senha no IonFinance.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                      Para sua segurança, este link é válido por apenas <strong style="color: #22d3ee;">15 minutos</strong>.
+                    </p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${resetUrl}" style="display: inline-block; background-color: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s;">
+                            Redefinir Minha Senha
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin-top: 30px;">
+                      Se você não solicitou esta alteração, pode ignorar este e-mail com segurança. Sua senha permanecerá inalterada.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #020617; padding: 20px 30px; border-top: 1px solid #1e293b; text-align: center;">
+                    <p style="color: #475569; font-size: 11px; margin: 0;">
+                      © ${new Date().getFullYear()} IONKOD. Todos os direitos reservados.<br>
+                      IonFinance - Tecnologia inteligente para o seu negócio.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+    
+    await this.sendEmail(to, 'Redefinição de Senha - IonFinance 🔒', html);
   }
 }

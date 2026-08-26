@@ -1,8 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +12,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private mailService: MailService,
+    private configService: ConfigService,
   ) {}
 
   async signIn(username: string, password: string) {
@@ -39,14 +42,12 @@ export class AuthService {
   }) {
     const user = await this.usersService.create(data);
 
-    // Iniciar trial de 7 dias se o plano for free
     if (!user.plano || user.plano === 'free') {
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 7);
-      await this.usersService.updatePerfil(user.id, { trialEndsAt: trialEnd });
+      await this.usersService.updatePerfil(user.id, { trialEndsAt: trialEnd } as any);
     }
 
-    // 1. Boas‑vindas ao novo usuário (pode falhar se domínio não for verificado)
     if (user.email) {
       try {
         await this.mailService.sendWelcomeEmail(user.email, user.nome || user.username);
@@ -55,7 +56,6 @@ export class AuthService {
       }
     }
 
-    // 2. Notificação para o dono
     try {
       const assunto = `Novo cadastro: ${user.username} (${user.email || 'sem e‑mail'})`;
       await this.mailService.sendWelcomeEmail('dlucio.douglas@gmail.com', assunto);
@@ -65,5 +65,55 @@ export class AuthService {
 
     const payload = { sub: user.id, username: user.username };
     return { access_token: await this.jwtService.sign(payload) };
+  }
+
+  // ✅ NOVO: Solicitar recuperação de senha
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    
+    // Retorna sucesso genérico para evitar enumeração de e-mails (segurança)
+    const successMessage = { message: 'Se este e-mail estiver cadastrado, você receberá um link de recuperação.' };
+    
+    if (!user || !user.email) {
+      return successMessage;
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await this.usersService.updatePerfil(user.id, {
+      resetPasswordToken: token,
+      resetPasswordExpires: expires,
+    } as any);
+
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/resetar-senha?token=${token}`;
+
+    try {
+      await this.mailService.sendPasswordReset(user.email, user.nome || user.username, resetUrl);
+    } catch (error) {
+      console.warn('Erro ao enviar e-mail de recuperação:', (error as any).message);
+    }
+
+    return successMessage;
+  }
+
+  // ✅ NOVO: Redefinir senha com o token
+  async resetPassword(token: string, newPassword: string) {
+    const user = await this.usersService.findByResetToken(token);
+
+    if (!user || !user.resetPasswordExpires || new Date() > user.resetPasswordExpires) {
+      throw new BadRequestException('Token inválido ou expirado. Solicite um novo link.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.usersService.updatePerfil(user.id, {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    } as any);
+
+    return { message: 'Senha redefinida com sucesso. Faça login com sua nova senha.' };
   }
 }

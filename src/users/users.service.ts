@@ -1,6 +1,7 @@
 import {
   Injectable,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -44,12 +45,11 @@ export class UsersService {
       email: data.email || null,
       nomeNegocio: data.nomeNegocio || null,
       telefone: data.telefone || null,
-      onboardingSteps: {}, // inicia vazio
+      onboardingSteps: {},
     });
 
     const savedUser = await this.usersRepository.save(novoUsuario);
 
-    // Criar preferências padrão
     const prefs = this.preferencesRepository.create({ userId: savedUser.id });
     await this.preferencesRepository.save(prefs);
 
@@ -64,17 +64,28 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  // ✅ Busca por stripeCustomerId
   async findByStripeCustomerId(customerId: string) {
     return this.usersRepository.findOne({
       where: { stripeCustomerId: customerId },
     });
   }
 
+  // ✅ NOVO: Buscar por e-mail
+  async findByEmail(email: string) {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  // ✅ NOVO: Buscar por token de recuperação
+  async findByResetToken(token: string) {
+    return this.usersRepository.findOne({
+      where: { resetPasswordToken: token },
+    });
+  }
+
   async getPerfil(userId: string) {
     const user = await this.findById(userId);
-    if (!user) throw new ConflictException('Usuário não encontrado');
-    const { password, ...rest } = user;
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+    const { password, resetPasswordToken, resetPasswordExpires, ...rest } = user;
     return rest;
   }
 
@@ -84,9 +95,9 @@ export class UsersService {
     currentUsername?: string,
   ) {
     const user = await this.findById(userId);
-    if (!user) throw new ConflictException('Usuário não encontrado');
+    if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    if (currentUsername !== 'dlucio') {
+    if (currentUsername !== 'dlucio' && currentUsername !== 'admin') {
       delete data.plano;
     }
 
@@ -100,7 +111,7 @@ export class UsersService {
     novaSenha: string,
   ) {
     const user = await this.findById(userId);
-    if (!user) throw new ConflictException('Usuário não encontrado');
+    if (!user) throw new NotFoundException('Usuário não encontrado');
     const valida = await bcrypt.compare(senhaAtual, user.password);
     if (!valida) throw new ConflictException('Senha atual incorreta');
     user.password = await bcrypt.hash(novaSenha, 10);
@@ -108,19 +119,14 @@ export class UsersService {
     return { message: 'Senha alterada com sucesso' };
   }
 
-  // 🆕 Onboarding – atualizar status
   async updateOnboardingStatus(userId: string, step: string, completed: boolean) {
-    console.log(`📝 Atualizando onboarding: userId=${userId}, step=${step}, completed=${completed}`);
     const user = await this.findById(userId);
-    if (!user) throw new ConflictException('Usuário não encontrado');
+    if (!user) throw new NotFoundException('Usuário não encontrado');
 
     const currentSteps = user.onboardingSteps || {};
     currentSteps[step] = completed;
-    console.log('📂 Passos atuais:', currentSteps);
 
     await this.usersRepository.update(userId, { onboardingSteps: currentSteps });
-    const updated = await this.findById(userId);
-    console.log('✅ Usuário após atualização:', updated?.onboardingSteps);
     return { message: 'Status atualizado', steps: currentSteps };
   }
 
@@ -134,26 +140,11 @@ export class UsersService {
       usuarios.map(async (user) => {
         const [vendas, despesas, clientes, receitas, ingredientes] =
           await Promise.all([
-            this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM vendas WHERE "userId" = $1`,
-              [user.id],
-            ),
-            this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM despesa WHERE "userId" = $1`,
-              [user.id],
-            ),
-            this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM clientes WHERE "userId" = $1`,
-              [user.id],
-            ),
-            this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM receitas WHERE "userId" = $1`,
-              [user.id],
-            ),
-            this.usersRepository.manager.query(
-              `SELECT COUNT(*) FROM ingredientes WHERE "userId" = $1`,
-              [user.id],
-            ),
+            this.usersRepository.manager.query(`SELECT COUNT(*) FROM vendas WHERE "userId" = $1`, [user.id]),
+            this.usersRepository.manager.query(`SELECT COUNT(*) FROM despesa WHERE "userId" = $1`, [user.id]),
+            this.usersRepository.manager.query(`SELECT COUNT(*) FROM clientes WHERE "userId" = $1`, [user.id]),
+            this.usersRepository.manager.query(`SELECT COUNT(*) FROM receitas WHERE "userId" = $1`, [user.id]),
+            this.usersRepository.manager.query(`SELECT COUNT(*) FROM ingredientes WHERE "userId" = $1`, [user.id]),
           ]);
 
         return {
@@ -171,33 +162,13 @@ export class UsersService {
   }
 
   async deletarUsuario(id: string) {
-    // Remove todos os dados dependentes
-    await this.usersRepository.manager.query(
-      `DELETE FROM vendas WHERE "userId" = $1`,
-      [id],
-    );
-    await this.usersRepository.manager.query(
-      `DELETE FROM clientes WHERE "userId" = $1`,
-      [id],
-    );
-    await this.usersRepository.manager.query(
-      `DELETE FROM despesa WHERE "userId" = $1`,
-      [id],
-    );
-    await this.usersRepository.manager.query(
-      `DELETE FROM receitas WHERE "userId" = $1`,
-      [id],
-    );
-    await this.usersRepository.manager.query(
-      `DELETE FROM ingredientes WHERE "userId" = $1`,
-      [id],
-    );
-    await this.usersRepository.manager.query(
-      `DELETE FROM user_preferences WHERE "userId" = $1`,
-      [id],
-    );
+    await this.usersRepository.manager.query(`DELETE FROM vendas WHERE "userId" = $1`, [id]);
+    await this.usersRepository.manager.query(`DELETE FROM clientes WHERE "userId" = $1`, [id]);
+    await this.usersRepository.manager.query(`DELETE FROM despesa WHERE "userId" = $1`, [id]);
+    await this.usersRepository.manager.query(`DELETE FROM receitas WHERE "userId" = $1`, [id]);
+    await this.usersRepository.manager.query(`DELETE FROM ingredientes WHERE "userId" = $1`, [id]);
+    await this.usersRepository.manager.query(`DELETE FROM user_preferences WHERE "userId" = $1`, [id]);
 
-    // Finalmente exclui o usuário
     return this.usersRepository.delete(id);
   }
 

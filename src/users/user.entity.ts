@@ -97,4 +97,10 @@ export class UserEntity {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @Column({ nullable: true })
+  resetPasswordToken?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires?: Date;
 }
