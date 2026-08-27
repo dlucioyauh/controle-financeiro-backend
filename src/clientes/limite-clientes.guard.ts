@@ -8,7 +8,7 @@ import { RequestWithUser } from '../auth/auth.guard';
 @Injectable()
 export class LimiteClientesGuard implements CanActivate {
   private limites: Record<string, number> = {
-    free: 3,
+    free: 5,
     basic: 50,
     pro: Infinity,
     premium: Infinity,
