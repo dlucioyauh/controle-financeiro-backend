@@ -38,7 +38,11 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
       ttl: 300,
       max: 100,
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    // ✅ AJUSTE DE SEGURANÇA: 60 requisições por minuto (1 por segundo) para a API geral
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 60, 
+    }]),
     DespesasModule,
     AuthModule,
     UsersModule,
