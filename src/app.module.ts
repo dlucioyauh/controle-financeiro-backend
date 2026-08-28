@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { DespesasModule } from './despesas/despesas.module';
 import { AuthModule } from './auth/auth.module';
@@ -19,6 +19,7 @@ import { RelatoriosAvancadosModule } from './relatorios-avancados/relatorios-ava
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
+import { ThrottlerBehindProxyGuard } from './common/throttler-behind-proxy.guard';
 
 @Module({
   imports: [
@@ -38,7 +39,6 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
       ttl: 300,
       max: 100,
     }),
-    // ✅ AJUSTE DE SEGURANÇA: 60 requisições por minuto (1 por segundo) para a API geral
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 60, 
@@ -62,7 +62,7 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: ThrottlerBehindProxyGuard,
     },
   ],
 })

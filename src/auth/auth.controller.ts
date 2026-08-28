@@ -3,15 +3,15 @@ import {
   Controller,
   Post,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler'; // ✅ CORREÇÃO: Throttle vem deste pacote
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  // ✅ BLINDAGEM: Máximo 5 tentativas de login por minuto
-  @Throttle({ default: { limit: 2, ttl: 60000 } }) // Mudei de 5 para 2
+  // ✅ BLINDAGEM: Máximo 2 tentativas de login por minuto (para teste)
+  @Throttle({ default: { limit: 2, ttl: 60000 } })
   @Post('login')
   signIn(
     @Body() body: { username: string; password: string },
