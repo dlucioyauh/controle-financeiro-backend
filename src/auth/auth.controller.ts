@@ -11,7 +11,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   // ✅ BLINDAGEM: Máximo 5 tentativas de login por minuto
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 2, ttl: 60000 } }) // Mudei de 5 para 2
   @Post('login')
   signIn(
     @Body() body: { username: string; password: string },
