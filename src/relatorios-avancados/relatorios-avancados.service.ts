@@ -45,11 +45,15 @@ export class RelatoriosAvancadosService {
       let despesas: DespesaEntity[] = [];
       let totalDespesas = 0;
       if (tipo !== 'venda') {
-        // ✅ Usa 'ambito' conforme a entidade
-        const whereDespesas: any = { userId, ambito: 'EMPRESA' };
+        // Busca todas as despesas do usuário no período
+        const whereDespesas: any = { userId };
         if (dateFilter) whereDespesas.data = dateFilter;
         
         despesas = await this.despesasRepo.find({ where: whereDespesas });
+        
+        // ✅ FILTRO EM MEMÓRIA: Separa apenas as empresariais, evitando erro de coluna no banco
+        despesas = despesas.filter((d: any) => d.ambito === 'EMPRESA' || !d.ambito);
+        
         totalDespesas = despesas.reduce((acc, d) => acc + Number(d.valor || 0), 0);
       }
 
@@ -114,17 +118,18 @@ export class RelatoriosAvancadosService {
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
-      // ✅ Filtra por 'ambito' conforme a entidade DespesaEntity
+      // Busca todas as despesas do período
+      let despesas = await this.despesasRepo.find({ where: whereDespesas });
+
+      // ✅ FILTRO EM MEMÓRIA: Separa por âmbito sem depender do schema do banco
       if (!incluirPessoal) {
-        whereDespesas.ambito = 'EMPRESA';
+        despesas = despesas.filter((d: any) => d.ambito === 'EMPRESA' || !d.ambito);
       }
-      
-      const despesas = await this.despesasRepo.find({ where: whereDespesas });
 
       // 3. Calcular Receita Bruta
       const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
 
-      // 4. Deduções (Placeholder)
+      // 4. Deduções (Placeholder para impostos/taxas futuras)
       const deducoes = 0;
 
       // 5. Classificar Despesas em CPV vs Operacionais
@@ -178,8 +183,8 @@ export class RelatoriosAvancadosService {
       };
     } catch (error) {
       const err = error as Error;
-      this.logger.error(`Erro em gerarDre: ${err.message}`, err.stack);
-      throw new InternalServerErrorException('Falha ao gerar o DRE. Verifique os logs.');
+      this.logger.error(`[DRE ERROR] Mensagem: ${err.message}`, err.stack);
+      throw new InternalServerErrorException(`Falha ao gerar o DRE: ${err.message}`);
     }
   }
 }
