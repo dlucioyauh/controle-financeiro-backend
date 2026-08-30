@@ -4,37 +4,41 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { UserEntity } from '../users/user.entity';
 
-@Entity('despesa')
+@Entity('despesas')
 export class DespesaEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ type: 'varchar' })
   descricao!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor!: number;
 
-  @Column({ type: 'date' })
-  data!: string;
-
-  @Column({ type: 'varchar', length: 50, nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   categoria!: string | null;
+
+  @Column({ type: 'varchar', default: 'YYYY-MM-DD' }) // Ajuste conforme seu padrão atual
+  data!: string;
 
   @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
 
-  // ✅ NOVO CAMPO
-  @Column({ type: 'uuid', nullable: true })
-  userId!: string | null;
+  @Column({ type: 'uuid' })
+  userId!: string;
 
-  @Column({ type: 'boolean', default: false })
-  pessoal!: boolean;
+  // ✅ NOVO CAMPO: Para separar DRE Empresarial do Pessoal
+  @Column({ type: 'varchar', enum: ['EMPRESA', 'PESSOAL'], default: 'EMPRESA' })
+  ambito!: 'EMPRESA' | 'PESSOAL';
 
-  @Column({ type: 'varchar', default: 'despesa' })
-  tipo!: string;
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user!: UserEntity;
 
   @CreateDateColumn()
   createdAt!: Date;

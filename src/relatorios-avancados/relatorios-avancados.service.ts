@@ -33,7 +33,6 @@ export class RelatoriosAvancadosService {
       let vendas: VendaEntity[] = [];
       let totalVendas = 0;
       if (tipo !== 'despesa') {
-        // ✅ CORREÇÃO LGPD: Filtrar por userId
         const whereVendas: any = { userId };
         if (dateFilter) whereVendas.dataVenda = dateFilter;
         if (clienteId) whereVendas.clienteId = clienteId;
@@ -46,7 +45,6 @@ export class RelatoriosAvancadosService {
       let despesas: DespesaEntity[] = [];
       let totalDespesas = 0;
       if (tipo !== 'venda') {
-        // ✅ CORREÇÃO LGPD: Filtrar por userId
         const whereDespesas: any = { userId, pessoal: false };
         if (dateFilter) whereDespesas.data = dateFilter;
         
@@ -94,6 +92,87 @@ export class RelatoriosAvancadosService {
       const err = error as Error;
       this.logger.error(`Erro em getResumoGeral: ${err.message}`, err.stack);
       throw new InternalServerErrorException('Falha ao gerar relatório. Verifique os logs.');
+    }
+  }
+
+  // ✅ NOVO MÉTODO: Lógica de Cálculo do DRE Automático
+  async gerarDre(
+    userId: string,
+    dataInicio: string,
+    dataFim: string,
+    ambito?: 'EMPRESA' | 'PESSOAL' | 'TODOS',
+  ) {
+    try {
+      const dateFilter = this.buildDateFilter(dataInicio, dataFim);
+
+      // 1. Buscar Vendas (Receita Bruta)
+      const whereVendas: any = { userId };
+      if (dateFilter) whereVendas.dataVenda = dateFilter;
+      const vendas = await this.vendasRepo.find({ where: whereVendas });
+      const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
+
+      // 2. Buscar Despesas conforme o âmbito
+      const whereDespesas: any = { userId };
+      if (dateFilter) whereDespesas.data = dateFilter;
+      
+      // Aplica filtro de âmbito usando o campo 'pessoal' existente
+      if (ambito === 'EMPRESA') {
+        whereDespesas.pessoal = false;
+      } else if (ambito === 'PESSOAL') {
+        whereDespesas.pessoal = true;
+      }
+      // Se for 'TODOS' ou undefined, não filtra por pessoal
+      
+      const despesas = await this.despesasRepo.find({ where: whereDespesas });
+
+      // 3. Classificar despesas em CPV vs Despesas Operacionais
+      // Palavras-chave que indicam custo direto do produto/serviço
+      const cpvKeywords = ['custo', 'insumo', 'fornecedor', 'matéria', 'materia', 'embalagem', 'mercadoria', 'produto'];
+      
+      let cpv = 0;
+      let despesasOperacionais = 0;
+
+      despesas.forEach((d) => {
+        const val = Number(d.valor || 0);
+        const cat = (d.categoria || '').toLowerCase();
+        const desc = (d.descricao || '').toLowerCase();
+        
+        // Verifica se a categoria OU descrição contém palavras-chave de custo direto
+        const isCpv = cpvKeywords.some((keyword) => cat.includes(keyword) || desc.includes(keyword));
+
+        if (isCpv) {
+          cpv += val;
+        } else {
+          despesasOperacionais += val;
+        }
+      });
+
+      // 4. Deduções (Placeholder para impostos/taxas futuras - pode ser expandido)
+      const deducoes = 0;
+
+      // 5. Cálculos Finais da Estrutura do DRE
+      const lucroBruto = receitaBruta - deducoes - cpv;
+      const lucroLiquido = lucroBruto - despesasOperacionais;
+
+      return {
+        periodo: { 
+          dataInicio, 
+          dataFim, 
+          ambito: ambito || 'TODOS' 
+        },
+        receitaBruta: Number(receitaBruta.toFixed(2)),
+        deducoes: Number(deducoes.toFixed(2)),
+        cpv: Number(cpv.toFixed(2)),
+        lucroBruto: Number(lucroBruto.toFixed(2)),
+        despesasOperacionais: Number(despesasOperacionais.toFixed(2)),
+        lucroLiquido: Number(lucroLiquido.toFixed(2)),
+        margemBruta: receitaBruta > 0 ? Number(((lucroBruto / receitaBruta) * 100).toFixed(2)) : 0,
+        margemLiquida: receitaBruta > 0 ? Number(((lucroLiquido / receitaBruta) * 100).toFixed(2)) : 0,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Erro em gerarDre: ${err.message}`, err.stack);
+      throw new InternalServerErrorException('Falha ao gerar DRE. Verifique os logs.');
     }
   }
 }
