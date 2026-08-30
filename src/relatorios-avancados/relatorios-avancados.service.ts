@@ -45,7 +45,8 @@ export class RelatoriosAvancadosService {
       let despesas: DespesaEntity[] = [];
       let totalDespesas = 0;
       if (tipo !== 'venda') {
-        const whereDespesas: any = { userId, pessoal: false };
+        // ✅ CORREÇÃO: Usando 'ambito' em vez de 'pessoal' para compatibilidade com a entidade
+        const whereDespesas: any = { userId, ambito: 'EMPRESA' };
         if (dateFilter) whereDespesas.data = dateFilter;
         
         despesas = await this.despesasRepo.find({ where: whereDespesas });
@@ -95,12 +96,12 @@ export class RelatoriosAvancadosService {
     }
   }
 
-  // ✅ NOVO MÉTODO: Lógica de Cálculo do DRE Automático
+  // ✅ NOVO MÉTODO: Lógica de Cálculo do DRE (Issue #2)
   async gerarDre(
     userId: string,
     dataInicio: string,
     dataFim: string,
-    ambito?: 'EMPRESA' | 'PESSOAL' | 'TODOS',
+    incluirPessoal: boolean = false,
   ) {
     try {
       const dateFilter = this.buildDateFilter(dataInicio, dataFim);
@@ -109,36 +110,43 @@ export class RelatoriosAvancadosService {
       const whereVendas: any = { userId };
       if (dateFilter) whereVendas.dataVenda = dateFilter;
       const vendas = await this.vendasRepo.find({ where: whereVendas });
-      const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
 
-      // 2. Buscar Despesas conforme o âmbito
+      // 2. Buscar Despesas
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
-      // Aplica filtro de âmbito usando o campo 'pessoal' existente
-      if (ambito === 'EMPRESA') {
-        whereDespesas.pessoal = false;
-      } else if (ambito === 'PESSOAL') {
-        whereDespesas.pessoal = true;
+      // ✅ CORREÇÃO: Filtra por 'ambito' conforme a entidade DespesaEntity
+      if (!incluirPessoal) {
+        whereDespesas.ambito = 'EMPRESA';
       }
-      // Se for 'TODOS' ou undefined, não filtra por pessoal
       
       const despesas = await this.despesasRepo.find({ where: whereDespesas });
 
-      // 3. Classificar despesas em CPV vs Despesas Operacionais
-      // Palavras-chave que indicam custo direto do produto/serviço
-      const cpvKeywords = ['custo', 'insumo', 'fornecedor', 'matéria', 'materia', 'embalagem', 'mercadoria', 'produto'];
+      // 3. Calcular Receita Bruta
+      const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
+
+      // 4. Deduções (Placeholder para impostos/taxas futuras)
+      const deducoes = 0;
+
+      // 5. Classificar Despesas em CPV vs Operacionais
+      const cpvKeywords = [
+        'custo', 'insumo', 'fornecedor', 'matéria', 'materia', 
+        'embalagem', 'mercadoria', 'produto', 'ingrediente'
+      ];
       
       let cpv = 0;
       let despesasOperacionais = 0;
+      const despesasPorCategoria: Record<string, number> = {};
 
       despesas.forEach((d) => {
         const val = Number(d.valor || 0);
-        const cat = (d.categoria || '').toLowerCase();
-        const desc = (d.descricao || '').toLowerCase();
+        const cat = (d.categoria || 'Sem Categoria').toLowerCase();
         
-        // Verifica se a categoria OU descrição contém palavras-chave de custo direto
-        const isCpv = cpvKeywords.some((keyword) => cat.includes(keyword) || desc.includes(keyword));
+        // Agrupa por categoria para o gráfico de cascata no frontend
+        despesasPorCategoria[cat] = (despesasPorCategoria[cat] || 0) + val;
+
+        // Classifica como CPV se a categoria contiver palavra-chave de custo direto
+        const isCpv = cpvKeywords.some((keyword) => cat.includes(keyword));
 
         if (isCpv) {
           cpv += val;
@@ -147,18 +155,17 @@ export class RelatoriosAvancadosService {
         }
       });
 
-      // 4. Deduções (Placeholder para impostos/taxas futuras - pode ser expandido)
-      const deducoes = 0;
-
-      // 5. Cálculos Finais da Estrutura do DRE
+      // 6. Cálculos Finais do DRE
       const lucroBruto = receitaBruta - deducoes - cpv;
       const lucroLiquido = lucroBruto - despesasOperacionais;
+      const margemBruta = receitaBruta > 0 ? (lucroBruto / receitaBruta) * 100 : 0;
+      const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
 
       return {
         periodo: { 
           dataInicio, 
           dataFim, 
-          ambito: ambito || 'TODOS' 
+          ambito: incluirPessoal ? 'GERAL (Empresa + Pessoal)' : 'EMPRESARIAL' 
         },
         receitaBruta: Number(receitaBruta.toFixed(2)),
         deducoes: Number(deducoes.toFixed(2)),
@@ -166,13 +173,16 @@ export class RelatoriosAvancadosService {
         lucroBruto: Number(lucroBruto.toFixed(2)),
         despesasOperacionais: Number(despesasOperacionais.toFixed(2)),
         lucroLiquido: Number(lucroLiquido.toFixed(2)),
-        margemBruta: receitaBruta > 0 ? Number(((lucroBruto / receitaBruta) * 100).toFixed(2)) : 0,
-        margemLiquida: receitaBruta > 0 ? Number(((lucroLiquido / receitaBruta) * 100).toFixed(2)) : 0,
+        margemBruta: Number(margemBruta.toFixed(2)),
+        margemLiquida: Number(margemLiquida.toFixed(2)),
+        despesasPorCategoria,
+        totalVendas: vendas.length,
+        totalDespesas: despesas.length,
       };
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Erro em gerarDre: ${err.message}`, err.stack);
-      throw new InternalServerErrorException('Falha ao gerar DRE. Verifique os logs.');
+      throw new InternalServerErrorException('Falha ao gerar o DRE. Verifique os logs.');
     }
   }
 }
