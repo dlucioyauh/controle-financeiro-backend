@@ -23,7 +23,7 @@ export class RecorrenciasService {
     return this.recorrenciaRepository.find({
       where: { 
         userId, 
-        ativa: true // ✅ CORREÇÃO: Buscar apenas regras que ainda estão ativas
+        ativa: true // ✅ Garante que só retorna regras ativas
       },
       order: { proximaExecucao: 'ASC' },
     });
@@ -59,10 +59,10 @@ export class RecorrenciasService {
               descricao: `[AUTO] ${recorrencia.descricao}`,
               valor: recorrencia.valor,
               categoria: recorrencia.categoria || 'Recorrente',
-              data: new Date(),
+              data: new Date().toISOString().split('T')[0], // ✅ CORREÇÃO: Converte Date para string 'YYYY-MM-DD'
               usuario: recorrencia.userId,
               userId: recorrencia.userId,
-              ambito: recorrencia.ambito, // ✅ Garante que o âmbito seja replicado
+              ambito: recorrencia.ambito,
             });
           } else if (recorrencia.tipo === 'RECEITA') {
             await manager.save(VendaEntity, {
@@ -71,7 +71,7 @@ export class RecorrenciasService {
               quantidade: 1,
               precoUnitario: recorrencia.valor,
               canalVenda: 'Recorrente',
-              dataVenda: new Date(),
+              dataVenda: new Date(), // VendaEntity aceita Date aqui, então está ok
               usuario: recorrencia.userId,
               userId: recorrencia.userId,
             });
@@ -92,7 +92,7 @@ export class RecorrenciasService {
           this.logger.log(`✅ Processada com sucesso: ${recorrencia.descricao} (ID: ${recorrencia.id})`);
         } catch (error) {
           this.logger.error(`❌ Falha ao processar recorrência ${recorrencia.id}:`, error);
-          throw error;
+          throw error; // Faz o rollback da transação em caso de erro
         }
       });
     }
