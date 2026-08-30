@@ -20,6 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ThrottlerBehindProxyGuard } from './common/throttler-behind-proxy.guard';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ThrottlerBehindProxyGuard } from './common/throttler-behind-proxy.guard
     RelatoriosAvancadosModule,
     NotificationsModule,
     WhatsAppModule,
+    ExportModule,
   ],
   providers: [
     {
