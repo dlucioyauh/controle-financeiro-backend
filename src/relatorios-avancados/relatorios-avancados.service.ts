@@ -45,7 +45,7 @@ export class RelatoriosAvancadosService {
       let despesas: DespesaEntity[] = [];
       let totalDespesas = 0;
       if (tipo !== 'venda') {
-        // ✅ CORREÇÃO: Usando 'ambito' em vez de 'pessoal' para compatibilidade com a entidade
+        // ✅ Usa 'ambito' conforme a entidade
         const whereDespesas: any = { userId, ambito: 'EMPRESA' };
         if (dateFilter) whereDespesas.data = dateFilter;
         
@@ -96,7 +96,6 @@ export class RelatoriosAvancadosService {
     }
   }
 
-  // ✅ NOVO MÉTODO: Lógica de Cálculo do DRE (Issue #2)
   async gerarDre(
     userId: string,
     dataInicio: string,
@@ -115,7 +114,7 @@ export class RelatoriosAvancadosService {
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
-      // ✅ CORREÇÃO: Filtra por 'ambito' conforme a entidade DespesaEntity
+      // ✅ Filtra por 'ambito' conforme a entidade DespesaEntity
       if (!incluirPessoal) {
         whereDespesas.ambito = 'EMPRESA';
       }
@@ -125,7 +124,7 @@ export class RelatoriosAvancadosService {
       // 3. Calcular Receita Bruta
       const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
 
-      // 4. Deduções (Placeholder para impostos/taxas futuras)
+      // 4. Deduções (Placeholder)
       const deducoes = 0;
 
       // 5. Classificar Despesas em CPV vs Operacionais
@@ -142,10 +141,8 @@ export class RelatoriosAvancadosService {
         const val = Number(d.valor || 0);
         const cat = (d.categoria || 'Sem Categoria').toLowerCase();
         
-        // Agrupa por categoria para o gráfico de cascata no frontend
         despesasPorCategoria[cat] = (despesasPorCategoria[cat] || 0) + val;
 
-        // Classifica como CPV se a categoria contiver palavra-chave de custo direto
         const isCpv = cpvKeywords.some((keyword) => cat.includes(keyword));
 
         if (isCpv) {
