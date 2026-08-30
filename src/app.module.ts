@@ -36,7 +36,9 @@ import { RecorrenciasModule } from './recorrencias/recorrencias.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV === 'development',
+      // ⚠️ TEMPORÁRIO: Ativado APENAS para criar a tabela 'despesas' faltante no staging.
+      // DEVE SER REVERTIDO para 'process.env.NODE_ENV === "development"' imediatamente após a validação.
+      synchronize: true, 
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
     CacheModule.register({
