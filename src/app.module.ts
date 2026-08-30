@@ -21,10 +21,13 @@ import { AdminMetricsModule } from './admin-metrics/admin-metrics.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ThrottlerBehindProxyGuard } from './common/throttler-behind-proxy.guard';
 import { ExportModule } from './export/export.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RecorrenciasModule } from './recorrencias/recorrencias.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -60,6 +63,7 @@ import { ExportModule } from './export/export.module';
     NotificationsModule,
     WhatsAppModule,
     ExportModule,
+    RecorrenciasModule,
   ],
   providers: [
     {
