@@ -21,7 +21,10 @@ export class RecorrenciasService {
 
   async listarPorUsuario(userId: string) {
     return this.recorrenciaRepository.find({
-      where: { userId },
+      where: { 
+        userId, 
+        ativa: true // ✅ CORREÇÃO: Buscar apenas regras que ainda estão ativas
+      },
       order: { proximaExecucao: 'ASC' },
     });
   }
@@ -30,7 +33,6 @@ export class RecorrenciasService {
     return this.recorrenciaRepository.update({ id, userId }, { ativa: false });
   }
 
-  // 🔥 MÉTODO CRÍTICO: Processado pelo Cron Job
   async processarRecorrenciasPendentes() {
     const agora = new Date();
     this.logger.log(`Iniciando processamento de recorrências pendentes até ${agora.toISOString()}`);
@@ -52,15 +54,15 @@ export class RecorrenciasService {
     for (const recorrencia of pendentes) {
       await this.dataSource.transaction(async (manager) => {
         try {
-          // 1. Gerar a transação real (Despesa ou Venda)
           if (recorrencia.tipo === 'DESPESA') {
             await manager.save(DespesaEntity, {
               descricao: `[AUTO] ${recorrencia.descricao}`,
               valor: recorrencia.valor,
               categoria: recorrencia.categoria || 'Recorrente',
-              data: agora.toISOString().slice(0, 10),
+              data: new Date(),
               usuario: recorrencia.userId,
               userId: recorrencia.userId,
+              ambito: recorrencia.ambito, // ✅ Garante que o âmbito seja replicado
             });
           } else if (recorrencia.tipo === 'RECEITA') {
             await manager.save(VendaEntity, {
@@ -75,7 +77,6 @@ export class RecorrenciasService {
             });
           }
 
-          // 2. Calcular e atualizar a próxima data de execução
           const proxima = new Date(recorrencia.proximaExecucao);
           switch (recorrencia.frequencia) {
             case 'DIARIA': proxima.setDate(proxima.getDate() + 1); break;
@@ -91,7 +92,7 @@ export class RecorrenciasService {
           this.logger.log(`✅ Processada com sucesso: ${recorrencia.descricao} (ID: ${recorrencia.id})`);
         } catch (error) {
           this.logger.error(`❌ Falha ao processar recorrência ${recorrencia.id}:`, error);
-          throw error; // Faz o rollback da transação
+          throw error;
         }
       });
     }
