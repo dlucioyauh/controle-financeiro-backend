@@ -36,9 +36,7 @@ import { RecorrenciasModule } from './recorrencias/recorrencias.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      // ✅ TEMPORÁRIO: Como o erro de 'receitas' foi resolvido via SQL, 
-      // o TypeORM agora conseguirá finalizar a sincronização e criar a tabela 'despesas'.
-      synchronize: true, 
+      synchronize: process.env.NODE_ENV === 'development',
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
     CacheModule.register({
