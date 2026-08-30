@@ -36,6 +36,7 @@ import { RecorrenciasModule } from './recorrencias/recorrencias.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
+      // ✅ SEGURANÇA: Desativado em staging/produção para evitar crashes de schema
       synchronize: process.env.NODE_ENV === 'development',
       migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),

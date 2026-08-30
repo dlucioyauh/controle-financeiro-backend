@@ -45,13 +45,12 @@ export class RelatoriosAvancadosService {
       let despesas: DespesaEntity[] = [];
       let totalDespesas = 0;
       if (tipo !== 'venda') {
-        // Busca todas as despesas do usuário no período
         const whereDespesas: any = { userId };
         if (dateFilter) whereDespesas.data = dateFilter;
         
         despesas = await this.despesasRepo.find({ where: whereDespesas });
         
-        // ✅ FILTRO EM MEMÓRIA: Separa apenas as empresariais, evitando erro de coluna no banco
+        // ✅ FILTRO EM MEMÓRIA: Garante compatibilidade sem depender do schema do banco
         despesas = despesas.filter((d: any) => d.ambito === 'EMPRESA' || !d.ambito);
         
         totalDespesas = despesas.reduce((acc, d) => acc + Number(d.valor || 0), 0);
@@ -118,7 +117,6 @@ export class RelatoriosAvancadosService {
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
-      // Busca todas as despesas do período
       let despesas = await this.despesasRepo.find({ where: whereDespesas });
 
       // ✅ FILTRO EM MEMÓRIA: Separa por âmbito sem depender do schema do banco
@@ -129,7 +127,7 @@ export class RelatoriosAvancadosService {
       // 3. Calcular Receita Bruta
       const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
 
-      // 4. Deduções (Placeholder para impostos/taxas futuras)
+      // 4. Deduções (Placeholder)
       const deducoes = 0;
 
       // 5. Classificar Despesas em CPV vs Operacionais
