@@ -1,67 +1,69 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DespesasService } from './despesas.service';
 import { DespesaEntity } from './despesa.entity';
-import { Repository } from 'typeorm';
 
 describe('DespesasService', () => {
   let service: DespesasService;
-  let mockRepository: jest.Mocked<Repository<DespesaEntity>>;
+  let mockRepository: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockRepository = {
+      create: jest.fn().mockImplementation((dto) => dto),
+      save: jest.fn().mockImplementation((dto) => dto),
       find: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-      delete: jest.fn(),
       findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<DespesaEntity>>;
-    
-    service = new DespesasService(mockRepository as unknown as any);
+      remove: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        DespesasService,
+        {
+          provide: getRepositoryToken(DespesaEntity),
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
+
+    service = module.get<DespesasService>(DespesasService);
   });
 
   describe('getTotais', () => {
-    it('deve calcular totais para despesas da empresa (pessoal=false, tipo=despesa)', async () => {
-      const mockDespesas = [
-        { valor: 100, tipo: 'despesa', pessoal: false } as DespesaEntity,
-        { valor: 50, tipo: 'despesa', pessoal: false } as DespesaEntity,
-      ];
+    it('deve calcular totais para despesas da empresa (ambito=EMPRESA, tipo=despesa)', async () => {
+      const mockDespesas = [{ valor: 100 }, { valor: 200 }];
       mockRepository.find.mockResolvedValue(mockDespesas);
 
       const result = await service.getTotais('user123', false, 'despesa');
 
-      // ✅ CORREÇÃO: userId em vez de usuario
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user123', pessoal: false, tipo: 'despesa' }
+        where: { userId: 'user123', ambito: 'EMPRESA', tipo: 'despesa' },
       });
-      expect(result).toEqual({ total: 150, quantidade: 2 });
+      expect(result).toEqual({ total: 300, quantidade: 2 });
     });
 
-    it('deve calcular totais para despesas pessoais (pessoal=true, tipo=despesa)', async () => {
-      const mockDespesas = [{ valor: 30, tipo: 'despesa', pessoal: true } as DespesaEntity];
+    it('deve calcular totais para despesas pessoais (ambito=PESSOAL, tipo=despesa)', async () => {
+      const mockDespesas = [{ valor: 50 }];
       mockRepository.find.mockResolvedValue(mockDespesas);
 
       const result = await service.getTotais('user123', true, 'despesa');
 
-      // ✅ CORREÇÃO: userId em vez de usuario
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user123', pessoal: true, tipo: 'despesa' }
+        where: { userId: 'user123', ambito: 'PESSOAL', tipo: 'despesa' },
       });
-      expect(result).toEqual({ total: 30, quantidade: 1 });
+      expect(result).toEqual({ total: 50, quantidade: 1 });
     });
 
-    it('deve calcular totais para receitas pessoais (pessoal=true, tipo=receita)', async () => {
-      const mockReceitas = [
-        { valor: 200, tipo: 'receita', pessoal: true } as DespesaEntity,
-        { valor: 100, tipo: 'receita', pessoal: true } as DespesaEntity,
-      ];
+    it('deve calcular totais para receitas pessoais (ambito=PESSOAL, tipo=receita)', async () => {
+      const mockReceitas = [{ valor: 1000 }];
       mockRepository.find.mockResolvedValue(mockReceitas);
 
       const result = await service.getTotais('user123', true, 'receita');
 
-      // ✅ CORREÇÃO: userId em vez de usuario
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user123', pessoal: true, tipo: 'receita' }
+        where: { userId: 'user123', ambito: 'PESSOAL', tipo: 'receita' },
       });
-      expect(result).toEqual({ total: 300, quantidade: 2 });
+      expect(result).toEqual({ total: 1000, quantidade: 1 });
     });
 
     it('deve retornar total 0 e quantidade 0 quando não há registros', async () => {
@@ -69,6 +71,9 @@ describe('DespesasService', () => {
 
       const result = await service.getTotais('user123', false);
 
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { userId: 'user123', ambito: 'EMPRESA' },
+      });
       expect(result).toEqual({ total: 0, quantidade: 0 });
     });
   });

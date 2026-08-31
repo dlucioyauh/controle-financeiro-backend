@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { DespesaEntity } from './despesa.entity';
 
 @Injectable()
@@ -10,43 +10,35 @@ export class DespesasService {
     private despesasRepository: Repository<DespesaEntity>,
   ) {}
 
-  async criar(userId: string, dados: any) {
+  async criar(dados: any) {
+    // ✅ Mapeia 'pessoal' para 'ambito' se o frontend ainda enviar o campo antigo
+    const ambito = dados.ambito || (dados.pessoal ? 'PESSOAL' : 'EMPRESA');
+    
     const novaDespesa = this.despesasRepository.create({
       ...dados,
-      userId,
-      // ✅ Garante que o âmbito seja definido, com fallback para 'EMPRESA'
-      ambito: dados.ambito || 'EMPRESA',
+      ambito,
     });
     return this.despesasRepository.save(novaDespesa);
   }
 
-  async listar(userId: string) {
-    // ✅ CORREÇÃO: Filtra por ambito 'EMPRESA' em vez de 'pessoal: false'
+  async listar(userId: string, isPessoal: boolean, tipo?: string) {
+    const where: any = { userId };
+    // ✅ CORREÇÃO: Usa 'ambito' em vez de 'pessoal'
+    where.ambito = isPessoal ? 'PESSOAL' : 'EMPRESA';
+    
+    if (tipo) {
+      where.tipo = tipo;
+    }
+
     return this.despesasRepository.find({
-      where: { userId, ambito: 'EMPRESA' },
+      where,
       order: { data: 'DESC' },
     });
   }
 
-  async listarPessoais(userId: string) {
-    // ✅ CORREÇÃO: Filtra por ambito 'PESSOAL' em vez de 'pessoal: true'
-    return this.despesasRepository.find({
-      where: { userId, ambito: 'PESSOAL' },
-      order: { data: 'DESC' },
-    });
-  }
-
-  async listarReceitasPessoais(userId: string) {
-    // ✅ CORREÇÃO: Mesma lógica, buscando despesas de âmbito pessoal que funcionam como receita
-    return this.despesasRepository.find({
-      where: { userId, ambito: 'PESSOAL' },
-      order: { data: 'DESC' },
-    });
-  }
-
-  async buscarPorId(id: string, userId: string) {
+  async buscarPorId(id: string) {
     const despesa = await this.despesasRepository.findOne({
-      where: { id, userId },
+      where: { id },
     });
     if (!despesa) {
       throw new NotFoundException('Despesa não encontrada');
@@ -54,14 +46,38 @@ export class DespesasService {
     return despesa;
   }
 
-  async atualizar(id: string, userId: string, dados: any) {
-    const despesa = await this.buscarPorId(id, userId);
+  async atualizar(id: string, dados: any) {
+    const despesa = await this.buscarPorId(id);
+    
+    // ✅ Mapeia atualização de 'pessoal' para 'ambito'
+    if (dados.pessoal !== undefined) {
+      dados.ambito = dados.pessoal ? 'PESSOAL' : 'EMPRESA';
+      delete dados.pessoal;
+    }
+
     Object.assign(despesa, dados);
     return this.despesasRepository.save(despesa);
   }
 
-  async remover(id: string, userId: string) {
-    const despesa = await this.buscarPorId(id, userId);
+  async remover(id: string) {
+    const despesa = await this.buscarPorId(id);
     return this.despesasRepository.remove(despesa);
+  }
+
+  async getTotais(userId: string, isPessoal: boolean, tipo?: string) {
+    const where: any = { userId };
+    where.ambito = isPessoal ? 'PESSOAL' : 'EMPRESA';
+    
+    if (tipo) {
+      where.tipo = tipo;
+    }
+
+    const registros = await this.despesasRepository.find({ where });
+    const total = registros.reduce((acc, curr) => acc + Number(curr.valor || 0), 0);
+    
+    return {
+      total,
+      quantidade: registros.length,
+    };
   }
 }
