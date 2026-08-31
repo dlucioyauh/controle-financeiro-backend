@@ -23,7 +23,7 @@ export class DespesasService {
 
   async listar(userId: string, isPessoal: boolean, tipo?: string) {
     const where: any = { userId };
-    // ✅ CORREÇÃO: Usa 'ambito' em vez de 'pessoal'
+    // ✅ Usa 'ambito' em vez de 'pessoal'
     where.ambito = isPessoal ? 'PESSOAL' : 'EMPRESA';
     
     if (tipo) {
@@ -32,6 +32,22 @@ export class DespesasService {
 
     return this.despesasRepository.find({
       where,
+      order: { data: 'DESC' },
+    });
+  }
+
+  // ✅ Mantido para compatibilidade com o Controller
+  async listarPessoais(userId: string) {
+    return this.despesasRepository.find({
+      where: { userId, ambito: 'PESSOAL' },
+      order: { data: 'DESC' },
+    });
+  }
+
+  // ✅ Mantido para compatibilidade com o Controller
+  async listarReceitasPessoais(userId: string) {
+    return this.despesasRepository.find({
+      where: { userId, ambito: 'PESSOAL' },
       order: { data: 'DESC' },
     });
   }

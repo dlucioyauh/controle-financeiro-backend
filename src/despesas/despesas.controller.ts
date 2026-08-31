@@ -1,9 +1,11 @@
-import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards, ParseUUIDPipe, Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, UseGuards } from '@nestjs/common';
 import { DespesasService } from './despesas.service';
-import { AuthGuard, RequestWithUser } from '../auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import type { Request } from 'express';
+
+interface CustomRequest extends Request {
+  user?: any;
+}
 
 @Controller('despesas')
 @UseGuards(AuthGuard)
@@ -11,50 +13,45 @@ export class DespesasController {
   constructor(private readonly despesasService: DespesasService) {}
 
   @Post()
-  criar(@Body() data: Record<string, unknown>, @Req() req: Request) {
-    const customReq = req as RequestWithUser;
-    return this.despesasService.criar({ ...data, userId: customReq.user!.userId } as any);
+  async criar(@Body() data: any, @Req() req: CustomRequest) {
+    return this.despesasService.criar({ ...data, userId: req.user!.userId });
   }
 
-  // Rota unificada (usada pelo Dashboard)
   @Get()
-  listar(
-    @Req() req: Request,
+  async listar(
+    @Req() req: CustomRequest,
     @Query('pessoal') pessoal?: string,
-    @Query('tipo') tipo?: string
+    @Query('tipo') tipo?: string,
   ) {
-    const customReq = req as RequestWithUser;
-    const userId = customReq.user!.userId;
-    const isPessoal = pessoal === 'true' ? true : pessoal === 'false' ? false : undefined;
+    const userId = req.user!.userId;
+    // ✅ Converte a string 'true'/'false' da query para boolean, com fallback para false
+    const isPessoal = pessoal === 'true';
+    
     return this.despesasService.listar(userId, isPessoal, tipo);
   }
 
-  // ✅ ROTA LEGADA RESTAURADA: Para compatibilidade com outras telas do frontend
   @Get('pessoais')
-  listarPessoais(@Req() req: Request) {
-    const customReq = req as RequestWithUser;
-    return this.despesasService.listarPessoais(customReq.user!.userId);
+  async listarPessoais(@Req() req: CustomRequest) {
+    return this.despesasService.listarPessoais(req.user!.userId);
   }
 
-  // ✅ ROTA LEGADA RESTAURADA: Para compatibilidade com outras telas do frontend
   @Get('receitas-pessoais')
-  listarReceitasPessoais(@Req() req: Request) {
-    const customReq = req as RequestWithUser;
-    return this.despesasService.listarReceitasPessoais(customReq.user!.userId);
+  async listarReceitasPessoais(@Req() req: CustomRequest) {
+    return this.despesasService.listarReceitasPessoais(req.user!.userId);
   }
 
   @Get(':id')
-  buscarPorId(@Param('id', ParseUUIDPipe) id: string) {
+  async buscarPorId(@Param('id') id: string) {
     return this.despesasService.buscarPorId(id);
   }
 
   @Patch(':id')
-  atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() data: Record<string, unknown>) {
+  async atualizar(@Param('id') id: string, @Body() data: any) {
     return this.despesasService.atualizar(id, data);
   }
 
   @Delete(':id')
-  remover(@Param('id', ParseUUIDPipe) id: string) {
+  async remover(@Param('id') id: string) {
     return this.despesasService.remover(id);
   }
 }
