@@ -1,100 +1,67 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { DespesaEntity } from './despesa.entity';
 
 @Injectable()
 export class DespesasService {
   constructor(
     @InjectRepository(DespesaEntity)
-    private despesaRepository: Repository<DespesaEntity>,
+    private despesasRepository: Repository<DespesaEntity>,
   ) {}
 
-  async criar(data: {
-    descricao: string;
-    valor: number;
-    data: string;
-    categoria?: string;
-    userId: string; // ✅ Padronizado para userId (LGPD)
-    pessoal?: boolean;
-    tipo?: string;
-  }): Promise<DespesaEntity> {
-    const despesa = this.despesaRepository.create(data);
-    return this.despesaRepository.save(despesa);
+  async criar(userId: string, dados: any) {
+    const novaDespesa = this.despesasRepository.create({
+      ...dados,
+      userId,
+      // ✅ Garante que o âmbito seja definido, com fallback para 'EMPRESA'
+      ambito: dados.ambito || 'EMPRESA',
+    });
+    return this.despesasRepository.save(novaDespesa);
   }
 
-  // ✅ Método unificado e flexível para listagem com filtros opcionais
-  async listar(userId: string, pessoal?: boolean, tipo?: string): Promise<DespesaEntity[]> {
-    const where: any = { userId };
-    
-    if (pessoal !== undefined) {
-      where.pessoal = pessoal;
-    }
-    if (tipo) {
-      where.tipo = tipo;
-    }
-
-    return this.despesaRepository.find({
-      where,
+  async listar(userId: string) {
+    // ✅ CORREÇÃO: Filtra por ambito 'EMPRESA' em vez de 'pessoal: false'
+    return this.despesasRepository.find({
+      where: { userId, ambito: 'EMPRESA' },
       order: { data: 'DESC' },
     });
   }
 
-  // Métodos legados mantidos para compatibilidade, mas agora usam o método unificado
-  async listarPorUsuario(userId: string): Promise<DespesaEntity[]> {
-    return this.listar(userId, false, 'despesa');
+  async listarPessoais(userId: string) {
+    // ✅ CORREÇÃO: Filtra por ambito 'PESSOAL' em vez de 'pessoal: true'
+    return this.despesasRepository.find({
+      where: { userId, ambito: 'PESSOAL' },
+      order: { data: 'DESC' },
+    });
   }
 
-  async listarPessoais(userId: string): Promise<DespesaEntity[]> {
-    return this.listar(userId, true, 'despesa');
+  async listarReceitasPessoais(userId: string) {
+    // ✅ CORREÇÃO: Mesma lógica, buscando despesas de âmbito pessoal que funcionam como receita
+    return this.despesasRepository.find({
+      where: { userId, ambito: 'PESSOAL' },
+      order: { data: 'DESC' },
+    });
   }
 
-  async listarReceitasPessoais(userId: string): Promise<DespesaEntity[]> {
-    return this.listar(userId, true, 'receita');
-  }
-
-  async listarTodasPessoais(userId: string): Promise<DespesaEntity[]> {
-    return this.listar(userId, true);
-  }
-
-  async buscarPorId(id: string): Promise<DespesaEntity> {
-    const despesa = await this.despesaRepository.findOne({ where: { id } });
+  async buscarPorId(id: string, userId: string) {
+    const despesa = await this.despesasRepository.findOne({
+      where: { id, userId },
+    });
     if (!despesa) {
-      throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
+      throw new NotFoundException('Despesa não encontrada');
     }
     return despesa;
   }
 
-  async atualizar(
-    id: string,
-    data: Partial<{
-      descricao: string;
-      valor: number;
-      data: string;
-      categoria: string;
-      pessoal: boolean;
-      tipo: string;
-    }>,
-  ): Promise<DespesaEntity> {
-    const despesa = await this.buscarPorId(id);
-    Object.assign(despesa, data);
-    return this.despesaRepository.save(despesa);
+  async atualizar(id: string, userId: string, dados: any) {
+    const despesa = await this.buscarPorId(id, userId);
+    Object.assign(despesa, dados);
+    return this.despesasRepository.save(despesa);
   }
 
-  async remover(id: string): Promise<void> {
-    const resultado = await this.despesaRepository.delete(id);
-    if (resultado.affected === 0) {
-      throw new NotFoundException(`Despesa com ID ${id} não encontrada`);
-    }
-  }
-
-  async getTotais(userId: string, pessoal: boolean = false, tipo?: 'despesa' | 'receita'): Promise<{ total: number; quantidade: number }> {
-    const where: any = { userId };
-    if (pessoal !== undefined) where.pessoal = pessoal;
-    if (tipo) where.tipo = tipo;
-
-    const registros = await this.despesaRepository.find({ where });
-    const total = registros.reduce((sum, r) => sum + Number(r.valor), 0);
-    return { total, quantidade: registros.length };
+  async remover(id: string, userId: string) {
+    const despesa = await this.buscarPorId(id, userId);
+    return this.despesasRepository.remove(despesa);
   }
 }
