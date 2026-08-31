@@ -59,3 +59,4 @@ node_modules
 dist
 .env
 /src/generated/prisma
+backup_producao_*.sql
