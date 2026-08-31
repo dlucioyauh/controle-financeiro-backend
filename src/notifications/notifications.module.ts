@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsService } from './notifications.service';
 import { NotificationsScheduler } from './notifications.scheduler';
 import { NotificationsController } from './notifications.controller';
@@ -15,7 +14,6 @@ import { AuthModule } from '../auth/auth.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserPreferences, UserEntity]),
-    ScheduleModule.forRoot(),
     UsersModule,
     MailModule,
     VendasModule,

@@ -9,6 +9,9 @@ import {
 } from 'typeorm';
 import { UserEntity } from '../users/user.entity';
 
+export type TipoLancamento = 'RECEITA' | 'DESPESA';
+export type AmbitoLancamento = 'EMPRESA' | 'PESSOAL';
+
 @Entity('despesas')
 export class DespesaEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -23,7 +26,7 @@ export class DespesaEntity {
   @Column({ type: 'varchar', nullable: true })
   categoria!: string | null;
 
-  @Column({ type: 'varchar', default: 'YYYY-MM-DD' }) // Ajuste conforme seu padrão atual
+  @Column({ type: 'varchar', default: 'YYYY-MM-DD' })
   data!: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -32,9 +35,11 @@ export class DespesaEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 
-  // ✅ NOVO CAMPO: Para separar DRE Empresarial do Pessoal
   @Column({ type: 'varchar', enum: ['EMPRESA', 'PESSOAL'], default: 'EMPRESA' })
-  ambito!: 'EMPRESA' | 'PESSOAL';
+  ambito!: AmbitoLancamento;
+
+  @Column({ type: 'varchar', enum: ['RECEITA', 'DESPESA'], default: 'DESPESA' })
+  tipo!: TipoLancamento;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
