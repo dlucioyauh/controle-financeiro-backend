@@ -49,8 +49,6 @@ export class RelatoriosAvancadosService {
         if (dateFilter) whereDespesas.data = dateFilter;
         
         despesas = await this.despesasRepo.find({ where: whereDespesas });
-        
-        // ✅ FILTRO EM MEMÓRIA: Garante compatibilidade sem depender do schema do banco
         despesas = despesas.filter((d: any) => d.ambito === 'EMPRESA' || !d.ambito);
         
         totalDespesas = despesas.reduce((acc, d) => acc + Number(d.valor || 0), 0);
@@ -99,11 +97,12 @@ export class RelatoriosAvancadosService {
     }
   }
 
+  // ✅ CORREÇÃO: Aceita string 'EMPRESA' | 'PESSOAL' | 'TODOS'
   async gerarDre(
     userId: string,
     dataInicio: string,
     dataFim: string,
-    incluirPessoal: boolean = false,
+    ambito?: 'EMPRESA' | 'PESSOAL' | 'TODOS',
   ) {
     try {
       const dateFilter = this.buildDateFilter(dataInicio, dataFim);
@@ -117,12 +116,12 @@ export class RelatoriosAvancadosService {
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
-      let despesas = await this.despesasRepo.find({ where: whereDespesas });
-
-      // ✅ FILTRO EM MEMÓRIA: Separa por âmbito sem depender do schema do banco
-      if (!incluirPessoal) {
-        despesas = despesas.filter((d: any) => d.ambito === 'EMPRESA' || !d.ambito);
+      // ✅ Filtra por âmbito apenas se NÃO for 'TODOS'
+      if (ambito && ambito !== 'TODOS') {
+        whereDespesas.ambito = ambito;
       }
+
+      const despesas = await this.despesasRepo.find({ where: whereDespesas });
 
       // 3. Calcular Receita Bruta
       const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
@@ -161,11 +160,16 @@ export class RelatoriosAvancadosService {
       const margemBruta = receitaBruta > 0 ? (lucroBruto / receitaBruta) * 100 : 0;
       const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
 
+      // ✅ Formata o texto do âmbito para exibição correta na tela
+      let ambitoExibicao = 'EMPRESARIAL';
+      if (ambito === 'PESSOAL') ambitoExibicao = 'PESSOAL';
+      else if (ambito === 'TODOS') ambitoExibicao = 'GERAL (Empresa + Pessoal)';
+
       return {
         periodo: { 
           dataInicio, 
           dataFim, 
-          ambito: incluirPessoal ? 'GERAL (Empresa + Pessoal)' : 'EMPRESARIAL' 
+          ambito: ambitoExibicao
         },
         receitaBruta: Number(receitaBruta.toFixed(2)),
         deducoes: Number(deducoes.toFixed(2)),

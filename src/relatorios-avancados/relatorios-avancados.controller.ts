@@ -8,6 +8,10 @@ import { PlanoGuard } from '../auth/plano.guard';
 import { RelatoriosAvancadosService } from './relatorios-avancados.service';
 import type { Request } from 'express';
 
+interface CustomRequest extends Request {
+  user?: any;
+}
+
 @Controller('relatorios-avancados')
 @UseGuards(AuthGuard, PlanoGuard)
 export class RelatoriosAvancadosController {
@@ -17,9 +21,8 @@ export class RelatoriosAvancadosController {
   ) {}
 
   @Get('resumo')
-  async getResumo(@Req() req: Request, @Query() query: any) {
-    const user = (req as any).user;
-
+  async getResumo(@Req() req: CustomRequest, @Query() query: any) {
+    const userId = req.user!.userId;
     const filtros = {
       dataInicio: query.dataInicio || undefined,
       dataFim: query.dataFim || undefined,
@@ -34,7 +37,7 @@ export class RelatoriosAvancadosController {
     }
 
     try {
-      return await this.service.getResumoGeral(user.userId, filtros);
+      return await this.service.getResumoGeral(userId, filtros);
     } catch (error) {
       const err = error as Error;
       throw new InternalServerErrorException(`Erro ao processar relatório: ${err.message}`);
@@ -43,12 +46,12 @@ export class RelatoriosAvancadosController {
 
   @Get('dre')
   async getDre(
-    @Req() req: Request,
+    @Req() req: CustomRequest,
     @Query('dataInicio') dataInicio: string,
     @Query('dataFim') dataFim: string,
     @Query('ambito') ambito?: 'EMPRESA' | 'PESSOAL' | 'TODOS',
   ) {
-    const user = (req as any).user;
+    const userId = req.user!.userId;
 
     const enabled = await this.featureFlags.findByName('novo_relatorio');
     if (!enabled) {
@@ -59,14 +62,6 @@ export class RelatoriosAvancadosController {
       throw new BadRequestException('dataInicio e dataFim são obrigatórios');
     }
 
-    // ✅ CORREÇÃO: Converte a string 'ambito' para o booleano 'incluirPessoal' esperado pelo service
-    const incluirPessoal = ambito === 'PESSOAL' || ambito === 'TODOS';
-
-    try {
-      return await this.service.gerarDre(user.userId, dataInicio, dataFim, incluirPessoal);
-    } catch (error) {
-      const err = error as Error;
-      throw new InternalServerErrorException(`Erro ao gerar DRE: ${err.message}`);
-    }
+    return this.service.gerarDre(userId, dataInicio, dataFim, ambito);
   }
 }
