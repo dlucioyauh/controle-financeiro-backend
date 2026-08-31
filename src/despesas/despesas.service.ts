@@ -11,7 +11,6 @@ export class DespesasService {
   ) {}
 
   async criar(dados: any) {
-    // ✅ Mapeia 'pessoal' para 'ambito' se o frontend ainda enviar o campo antigo
     const ambito = dados.ambito || (dados.pessoal ? 'PESSOAL' : 'EMPRESA');
     
     const novaDespesa = this.despesasRepository.create({
@@ -23,12 +22,10 @@ export class DespesasService {
 
   async listar(userId: string, isPessoal: boolean, tipo?: string) {
     const where: any = { userId };
-    // ✅ Usa 'ambito' em vez de 'pessoal'
     where.ambito = isPessoal ? 'PESSOAL' : 'EMPRESA';
     
-    if (tipo) {
-      where.tipo = tipo;
-    }
+    // ✅ CORREÇÃO: Removido 'where.tipo = tipo' pois a coluna não existe na DespesaEntity.
+    // A separação entre receita/despesa no âmbito pessoal é tratada pelo frontend ou via categoria.
 
     return this.despesasRepository.find({
       where,
@@ -36,7 +33,6 @@ export class DespesasService {
     });
   }
 
-  // ✅ Mantido para compatibilidade com o Controller
   async listarPessoais(userId: string) {
     return this.despesasRepository.find({
       where: { userId, ambito: 'PESSOAL' },
@@ -44,7 +40,6 @@ export class DespesasService {
     });
   }
 
-  // ✅ Mantido para compatibilidade com o Controller
   async listarReceitasPessoais(userId: string) {
     return this.despesasRepository.find({
       where: { userId, ambito: 'PESSOAL' },
@@ -65,7 +60,6 @@ export class DespesasService {
   async atualizar(id: string, dados: any) {
     const despesa = await this.buscarPorId(id);
     
-    // ✅ Mapeia atualização de 'pessoal' para 'ambito'
     if (dados.pessoal !== undefined) {
       dados.ambito = dados.pessoal ? 'PESSOAL' : 'EMPRESA';
       delete dados.pessoal;
@@ -83,10 +77,6 @@ export class DespesasService {
   async getTotais(userId: string, isPessoal: boolean, tipo?: string) {
     const where: any = { userId };
     where.ambito = isPessoal ? 'PESSOAL' : 'EMPRESA';
-    
-    if (tipo) {
-      where.tipo = tipo;
-    }
 
     const registros = await this.despesasRepository.find({ where });
     const total = registros.reduce((acc, curr) => acc + Number(curr.valor || 0), 0);
