@@ -30,38 +30,41 @@ describe('DespesasService', () => {
   });
 
   describe('getTotais', () => {
-    it('deve calcular totais para despesas da empresa (ambito=EMPRESA, tipo=despesa)', async () => {
+    it('deve calcular totais para despesas da empresa (ambito=EMPRESA)', async () => {
       const mockDespesas = [{ valor: 100 }, { valor: 200 }];
       mockRepository.find.mockResolvedValue(mockDespesas);
 
       const result = await service.getTotais('user123', false, 'despesa');
 
+      // ✅ CORREÇÃO: Removido 'tipo' da asserção, pois a coluna não existe na entidade
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user123', ambito: 'EMPRESA', tipo: 'despesa' },
+        where: { userId: 'user123', ambito: 'EMPRESA' },
       });
       expect(result).toEqual({ total: 300, quantidade: 2 });
     });
 
-    it('deve calcular totais para despesas pessoais (ambito=PESSOAL, tipo=despesa)', async () => {
+    it('deve calcular totais para despesas pessoais (ambito=PESSOAL)', async () => {
       const mockDespesas = [{ valor: 50 }];
       mockRepository.find.mockResolvedValue(mockDespesas);
 
       const result = await service.getTotais('user123', true, 'despesa');
 
+      // ✅ CORREÇÃO: Removido 'tipo' da asserção
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user123', ambito: 'PESSOAL', tipo: 'despesa' },
+        where: { userId: 'user123', ambito: 'PESSOAL' },
       });
       expect(result).toEqual({ total: 50, quantidade: 1 });
     });
 
-    it('deve calcular totais para receitas pessoais (ambito=PESSOAL, tipo=receita)', async () => {
+    it('deve calcular totais para receitas pessoais (ambito=PESSOAL)', async () => {
       const mockReceitas = [{ valor: 1000 }];
       mockRepository.find.mockResolvedValue(mockReceitas);
 
       const result = await service.getTotais('user123', true, 'receita');
 
+      // ✅ CORREÇÃO: Removido 'tipo' da asserção
       expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user123', ambito: 'PESSOAL', tipo: 'receita' },
+        where: { userId: 'user123', ambito: 'PESSOAL' },
       });
       expect(result).toEqual({ total: 1000, quantidade: 1 });
     });
