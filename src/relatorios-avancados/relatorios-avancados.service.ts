@@ -106,7 +106,7 @@ export class RelatoriosAvancadosService {
     try {
       const dateFilter = this.buildDateFilter(dataInicio, dataFim);
 
-      // 1. Buscar Vendas (Receita Bruta)
+      // 1. Buscar Vendas (Receita Bruta Empresarial)
       const whereVendas: any = { userId };
       if (dateFilter) whereVendas.dataVenda = dateFilter;
       const vendas = await this.vendasRepo.find({ where: whereVendas });
@@ -115,14 +115,44 @@ export class RelatoriosAvancadosService {
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
+      // ✅ CORREÇÃO: Filtrar por âmbito E por tipo
       if (ambito && ambito !== 'TODOS') {
         whereDespesas.ambito = ambito;
+        // ✅ CORREÇÃO CRÍTICA: No DRE, só queremos registros que são DESEPSAS, não receitas
+        whereDespesas.tipo = 'DESPESA';
+      } else {
+        // Se for TODOS ou EMPRESA, também filtrar apenas despesas
+        whereDespesas.tipo = 'DESPESA';
       }
 
       const despesas = await this.despesasRepo.find({ where: whereDespesas });
 
       // 3. Calcular Receita Bruta
-      const receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
+      // Para âmbito PESSOAL, a receita bruta vem das vendas + receitas pessoais (tipo = 'RECEITA')
+      let receitaBruta = vendas.reduce((acc, v) => acc + Number(v.valorTotal || 0), 0);
+      
+      if (ambito === 'PESSOAL' || ambito === 'TODOS') {
+        // Buscar receitas pessoais da tabela despesas
+        const whereReceitasPessoais: any = { 
+          userId, 
+          tipo: 'RECEITA' 
+        };
+        if (dateFilter) whereReceitasPessoais.data = dateFilter;
+        if (ambito === 'PESSOAL') {
+          whereReceitasPessoais.ambito = 'PESSOAL';
+        }
+        
+        const receitasPessoais = await this.despesasRepo.find({ where: whereReceitasPessoais });
+        const totalReceitasPessoais = receitasPessoais.reduce((acc, r) => acc + Number(r.valor || 0), 0);
+        
+        // Para âmbito PESSOAL, a receita bruta é apenas as receitas pessoais
+        // Para âmbito TODOS, soma vendas + receitas pessoais
+        if (ambito === 'PESSOAL') {
+          receitaBruta = totalReceitasPessoais;
+        } else {
+          receitaBruta += totalReceitasPessoais;
+        }
+      }
 
       // 4. Deduções (Placeholder)
       const deducoes = 0;
@@ -143,9 +173,7 @@ export class RelatoriosAvancadosService {
         
         despesasPorCategoria[cat] = (despesasPorCategoria[cat] || 0) + val;
 
-        // ✅ CORREÇÃO: No âmbito PESSOAL, não existe CPV/CMV (Custo de Mercadoria Vendida).
-        // Todas as despesas pessoais são classificadas como Despesas Operacionais.
-        // O CPV só faz sentido contábil para o âmbito EMPRESARIAL.
+        // ✅ CORREÇÃO: No âmbito PESSOAL, não existe CPV/CMV
         if (ambito === 'PESSOAL') {
           despesasOperacionais += val;
         } else {
