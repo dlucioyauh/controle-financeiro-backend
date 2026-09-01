@@ -97,7 +97,6 @@ export class RelatoriosAvancadosService {
     }
   }
 
-  // ✅ CORREÇÃO: Aceita string 'EMPRESA' | 'PESSOAL' | 'TODOS'
   async gerarDre(
     userId: string,
     dataInicio: string,
@@ -116,7 +115,6 @@ export class RelatoriosAvancadosService {
       const whereDespesas: any = { userId };
       if (dateFilter) whereDespesas.data = dateFilter;
       
-      // ✅ Filtra por âmbito apenas se NÃO for 'TODOS'
       if (ambito && ambito !== 'TODOS') {
         whereDespesas.ambito = ambito;
       }
@@ -145,12 +143,18 @@ export class RelatoriosAvancadosService {
         
         despesasPorCategoria[cat] = (despesasPorCategoria[cat] || 0) + val;
 
-        const isCpv = cpvKeywords.some((keyword) => cat.includes(keyword));
-
-        if (isCpv) {
-          cpv += val;
-        } else {
+        // ✅ CORREÇÃO: No âmbito PESSOAL, não existe CPV/CMV (Custo de Mercadoria Vendida).
+        // Todas as despesas pessoais são classificadas como Despesas Operacionais.
+        // O CPV só faz sentido contábil para o âmbito EMPRESARIAL.
+        if (ambito === 'PESSOAL') {
           despesasOperacionais += val;
+        } else {
+          const isCpv = cpvKeywords.some((keyword) => cat.includes(keyword));
+          if (isCpv) {
+            cpv += val;
+          } else {
+            despesasOperacionais += val;
+          }
         }
       });
 
@@ -160,7 +164,6 @@ export class RelatoriosAvancadosService {
       const margemBruta = receitaBruta > 0 ? (lucroBruto / receitaBruta) * 100 : 0;
       const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
 
-      // ✅ Formata o texto do âmbito para exibição correta na tela
       let ambitoExibicao = 'EMPRESARIAL';
       if (ambito === 'PESSOAL') ambitoExibicao = 'PESSOAL';
       else if (ambito === 'TODOS') ambitoExibicao = 'GERAL (Empresa + Pessoal)';
