@@ -16,7 +16,10 @@ export class ReceitaEntity {
   @Column({ type: 'varchar', nullable: true })
   descricao!: string | null;
 
-  @Column({ type: 'int' })
+  // ✅ CORREÇÃO DE SEGURANÇA: Adicionado `default: 0` para garantir que o TypeORM 
+  // nunca mais tente criar esta coluna como NOT NULL sem valor padrão, 
+  // evitando completamente o crash de sincronização (QueryFailedError).
+  @Column({ type: 'int', default: 0 })
   rendimento!: number;
 
   @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
@@ -43,7 +46,6 @@ export class ReceitaEntity {
   @Column({ type: 'varchar', nullable: true })
   usuario!: string | null;
 
-  // ✅ NOVO CAMPO
   @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 
