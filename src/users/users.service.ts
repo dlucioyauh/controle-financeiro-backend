@@ -117,14 +117,20 @@ export class UsersService {
     return { message: 'Senha alterada com sucesso' };
   }
 
+  // ✅ MÉTODO ATUALIZADO COM PROTEÇÃO CONTRA NULL E LOG DE OBSERVABILIDADE
   async updateOnboardingStatus(userId: string, step: string, completed: boolean) {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    const currentSteps = user.onboardingSteps || {};
+    // Garante que seja um objeto, mesmo que venha null do banco para usuários antigos
+    const currentSteps = (user.onboardingSteps as Record<string, boolean>) || {};
     currentSteps[step] = completed;
 
     await this.usersRepository.update(userId, { onboardingSteps: currentSteps });
+    
+    // Log para rastreabilidade no Railway
+    console.log(`✅ Onboarding atualizado para usuário ${userId}:`, currentSteps);
+    
     return { message: 'Status atualizado', steps: currentSteps };
   }
 
