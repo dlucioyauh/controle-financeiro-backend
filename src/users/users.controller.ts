@@ -41,7 +41,6 @@ export class UsersController {
     return this.usersService.alterarSenha(userId, body.senhaAtual, body.novaSenha);
   }
 
-  // 🆕 Onboarding – status atual
   @Get('onboarding-status')
   async getOnboardingStatus(@Req() req: Request) {
     const userId = (req as any).user?.userId || (req as any).user?.sub;
@@ -49,7 +48,6 @@ export class UsersController {
     return user?.onboardingSteps || {};
   }
 
-  // 🆕 Onboarding – marcar passo como concluído
   @Patch('onboarding-status')
   async updateOnboardingStatus(
     @Req() req: Request,
@@ -59,7 +57,6 @@ export class UsersController {
     return this.usersService.updateOnboardingStatus(userId, body.step, body.completed);
   }
 
-  // Admin
   @Get()
   async listarUsuarios() {
     return this.usersService.listarUsuarios();

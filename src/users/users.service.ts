@@ -117,14 +117,20 @@ export class UsersService {
     return { message: 'Senha alterada com sucesso' };
   }
 
+  // ✅ MÉTODO ATUALIZADO COM PROTEÇÃO CONTRA NULL E LOG DE OBSERVABILIDADE
   async updateOnboardingStatus(userId: string, step: string, completed: boolean) {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    const currentSteps = user.onboardingSteps || {};
+    // Garante que seja um objeto, mesmo que venha null do banco para usuários antigos
+    const currentSteps = (user.onboardingSteps as Record<string, boolean>) || {};
     currentSteps[step] = completed;
 
     await this.usersRepository.update(userId, { onboardingSteps: currentSteps });
+    
+    // Log para rastreabilidade no Railway
+    console.log(`✅ Onboarding atualizado para usuário ${userId}:`, currentSteps);
+    
     return { message: 'Status atualizado', steps: currentSteps };
   }
 
@@ -138,7 +144,6 @@ export class UsersService {
       usuarios.map(async (user) => {
         const [vendas, despesas, clientes, receitas, ingredientes] =
           await Promise.all([
-            // ✅ CORREÇÃO: 'despesas' no plural, conforme nome real da tabela
             this.usersRepository.manager.query(`SELECT COUNT(*) FROM vendas WHERE "userId" = $1`, [user.id]),
             this.usersRepository.manager.query(`SELECT COUNT(*) FROM despesas WHERE "userId" = $1`, [user.id]),
             this.usersRepository.manager.query(`SELECT COUNT(*) FROM clientes WHERE "userId" = $1`, [user.id]),
@@ -161,7 +166,6 @@ export class UsersService {
   }
 
   async deletarUsuario(id: string) {
-    // ✅ CORREÇÃO: 'despesas' no plural
     await this.usersRepository.manager.query(`DELETE FROM vendas WHERE "userId" = $1`, [id]);
     await this.usersRepository.manager.query(`DELETE FROM clientes WHERE "userId" = $1`, [id]);
     await this.usersRepository.manager.query(`DELETE FROM despesas WHERE "userId" = $1`, [id]);
